@@ -1,0 +1,12 @@
+{
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "path": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": ["-NoExit", "-NoProfile"],  // 关键：-NoProfile 跳过所有集成脚本
+            "icon": "terminal-powershell"
+        }
+    },
+    // 清空其他 terminal 相关配置
+}
