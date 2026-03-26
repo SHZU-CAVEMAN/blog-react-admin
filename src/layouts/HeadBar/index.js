@@ -9,10 +9,8 @@ function HeadBar({collapsed,onToggle}){
   
     return(
         <div className='head-bar'>
-            <Button
-                type="dashed"
-                onClick={onToggle}
-            >
+            {/* 一个折叠左侧菜单栏的按钮 */}
+            <Button type="dashed" onClick={onToggle}>
                 {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             </Button>
         </div>

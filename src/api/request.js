@@ -10,30 +10,25 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(config => {
   // 可以加 token
-  /*
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = token;
   }
-    */
   return config;
 });
 
 // 响应拦截器
 service.interceptors.response.use(
   res => {
-    // 统一处理返回数据
-    /*
-    if (res.status !== 0) {
-      message.error(res.data.msg);
-      return Promise.reject(res.data);
-    }
-      */
     return res.data;
   },
-  err => {
-    message.error('网络错误');
-    return Promise.reject(err);
+  error => {
+    if (error.response && error.response.status === 401) {
+      // 清除无效 token
+      localStorage.removeItem("token");
+      // 跳转到登录页
+      window.location.href = "/login";
+    }
   }
 );
 

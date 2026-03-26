@@ -13,10 +13,12 @@ function Layout() {
   return (
 
     <div className="app-layout">
+
+      {/* 左侧菜单栏 */}
       <aside className="app-sider">
         <LeftMenu collapsed={collapsed}  />
       </aside>
-
+      {/* 右侧 顶部栏 + 主体内容区 */}
       <div className="app-main">
         <header className="app-header">
           <HeadBar         
@@ -24,10 +26,8 @@ function Layout() {
             onToggle={toggleCollapsed} 
         />
         </header>
-
         <main className="app-content">
           <BodyContent />
-         
         </main>
       </div>
     </div>

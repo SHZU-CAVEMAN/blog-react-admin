@@ -2,9 +2,6 @@ import { Space, Table, Tag, Button, Form, Input,Popconfirm} from 'antd';
 import { useState,useEffect } from 'react';
 import { 
   getCategoryList,
-  addCategory,
-  updateCategory,
-  deleteCategory
 } from '@/api/category'
 const { Column } = Table;
 

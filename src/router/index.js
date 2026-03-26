@@ -1,5 +1,7 @@
 import { createBrowserRouter} from "react-router-dom";
-import MyLayout from "../layouts";
+import AuthLayout from "./AuthLayout";
+
+
 import Home from "@/pages/home";
 import Guide from "@/pages/guide";
 import Permission from "@/pages/permission";
@@ -12,32 +14,22 @@ import Message from "@/pages/other/message";
 import Comment from "@/pages/other/comment";
 import Link from "@/pages/other/link";
 
-
-/*
-export default function AppRouter() {
-  return (
-    <Routes>
-      <Route path="/" element={<Layout />}> </Route>
-    </Routes>
-
-  );
-}
-*/
+import Login from "@/pages/login";
 
 // createBrowserRouter返回一个路由配置对象
 const router = createBrowserRouter([
   {
+    // 根路由
     path: "/",
-    element: <MyLayout />,
+    element: <AuthLayout />,
     loader:()=>{
-       const token = localStorage.getItem("token");
-        if (!token) {
-          //跳转到登录界面
-        }
+       // loader 一般用于 进入组件前的初始化数据请求，并且要return 数据（页面组件用 useLoaderData()获取这里返回的数据）
+       // loader 不是组件，不能用 hooks 。
     },
     children: [
       { path: "home", element: <Home /> },
       { path: "guide", element: <Guide /> },
+      // 权限管理 界面
       { path: "permission", element: <Permission /> },
 
       { path: "article/create", element: <ArticleCreate /> },
@@ -48,6 +40,10 @@ const router = createBrowserRouter([
       { path: "other/comment", element: <Comment /> },
       { path: "other/friendLink", element: <Link /> },
     ]
+  },
+  {
+    path: "login", 
+    element: <Login /> ,
   }
 ]);
 

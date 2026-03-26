@@ -36,7 +36,9 @@ const items = [
 ];
 
 const LeftMenu = ({collapsed}) => {
+    // react 页面跳转 方法
     const navigate = useNavigate();
+    // react 当前路由地址 对象
     const location = useLocation();
     return (
         <div>
@@ -45,10 +47,14 @@ const LeftMenu = ({collapsed}) => {
                 defaultOpenKeys={['sub1']}
                 mode="inline"
                 theme="dark"
-                inlineCollapsed={collapsed}
-                items={items}
                 style={{height:'100vh'}}
+                // 是否折叠
+                inlineCollapsed={collapsed}
+                // 菜单树
+                items={items}
+                
                 selectedKeys={[location.pathname]}
+                // 点击 页面跳转
                 onClick={({ key }) => {
                     navigate(key);
                 }}
