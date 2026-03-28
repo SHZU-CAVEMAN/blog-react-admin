@@ -5,9 +5,13 @@
 
 /* 左侧菜单 */
 .app-sider {
-  width: 20%;
+  width: 220px;      
   flex-shrink: 0;
-   background: rgb(240, 239, 239) !important;
+  background: rgb(240, 239, 239) !important;
+  transition: width 0.2s;
+}
+.app-sider.collapsed {
+  width: 80px; 
 }
 
 /* 右侧整体 */

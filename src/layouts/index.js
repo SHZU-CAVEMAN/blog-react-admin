@@ -15,7 +15,7 @@ function Layout() {
     <div className="app-layout">
 
       {/* 左侧菜单栏 */}
-      <aside className="app-sider">
+      <aside className={`app-sider ${collapsed ? 'collapsed' : ''}`}>
         <LeftMenu collapsed={collapsed}  />
       </aside>
       {/* 右侧 顶部栏 + 主体内容区 */}
