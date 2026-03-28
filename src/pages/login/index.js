@@ -2,189 +2,251 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
 import request from "@/api/request";
-import axios from "axios";
+import "./index.less"
+import logoImg from "@/assets/logoimage.png"; 
 
 const Login = () => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  // 表单状态：邮箱 + 验证码
-  const [formData, setFormData] = useState({
-    email: "",
-    code: "",
-  });
+    // 切换登录模式：true=验证码登录 / false=账号密码登录
+    const [isCodeLogin, setIsCodeLogin] = useState(true);
 
-  // 验证码倒计时
-  const [countDown, setCountDown] = useState(0);
-  // 发送按钮是否禁用
-  const [sending, setSending] = useState(false);
-
-  // 输入变化
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // ======================
-  // 1. 发送邮箱验证码
-  // ======================
-  const handleSendCode = async () => {
-    const { email } = formData;
-    // 校验邮箱
-    if (!email) {
-      message.warning("请输入邮箱");
-      return;
-    }
-    // 简单邮箱正则
-    const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailReg.test(email)) {
-      message.warning("请输入正确的邮箱格式");
-      return;
-    }
-    try {
-      setSending(true);
-
-    //   const { data } = await request.get("/verify/email", {
-    //     email: email,
-    //   });
-    //   console.log("liaohaitao123",data)
-    axios({
-        method: "post",
-        url: "http://127.0.0.1:81/verify/email",
-        data: {
-            email: email,
-        },
-    }).then((res) => {
-        console.log("已经收到验证码", res.data)
+    // 表单状态
+    const [formData, setFormData] = useState({
+        email: "",
+        code: "",
+        username: "",
+        password: "",
     });
 
-      message.success("验证码发送成功！");
-      setCountDown(60);
-    } catch (err) {
-      message.error("验证码发送失败");
-    } finally {
-      setSending(false);
-    }
-  };
+    // 验证码倒计时
+    const [countDown, setCountDown] = useState(0);
+    const [sending, setSending] = useState(false);
 
-  // 倒计时逻辑
-  useEffect(() => {
-    let timer = null;
-    if (countDown > 0) {
-      timer = setInterval(() => {
-        setCountDown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [countDown]);
+    // 输入变化
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
 
+    // 发送邮箱验证码
+    const handleSendCode = async () => {
+        const { email } = formData;
+        if (!email) {
+            message.warning("请输入邮箱");
+            return;
+        }
+        const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailReg.test(email)) {
+            message.warning("请输入正确的邮箱格式");
+            return;
+        }
+        try {
+            setSending(true);
+            await request.post("/verify/email", { email });
+            message.success("验证码发送成功！");
+            setCountDown(60);
+        } catch (err) {
+            message.error("发送失败");
+        } finally {
+            setSending(false);
+        }
+    };
 
-  // ======================
-  // 2. 邮箱登录提交
-  // ======================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { email, code } = formData;
-    // 前端校验
-    if (!email || !code) {
-      message.warning("邮箱和验证码不能为空");
-      return;
-    }
-    try {
-      // 后端的【邮箱登录接口】
-        axios({
-            method: "post",
-            url: "http://127.0.0.1:81/user/login",
-            data: {
-                account:email,
-                password:code
-            },
-        }).then((res) => {
-            console.log("已经收到验证码qw", res.data)
-            if (res.data.status === 100) {
-                localStorage.setItem("token", res.data.token);
-                localStorage.setItem("tokenExpire", Date.now() + 3 * 60 * 1000);
-                message.success("登录成功");
-                navigate("/home");
+    // 倒计时
+    useEffect(() => {
+        let timer = null;
+        if (countDown > 0) {
+            timer = setInterval(() => {
+                setCountDown((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(timer);
+    }, [countDown]);
+
+    // 登录提交
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (isCodeLogin) {
+            // 邮箱验证码登录
+            const { email, code } = formData;
+            if (!email || !code) {
+                message.warning("请完整填写");
+                return;
             }
+            try {
+                const res = await request.post("/user/login", {
+                    account: email,
+                    password: code,
+                });
+                if (res.status === 100) {
+                    localStorage.setItem("token", res.token);
+                    localStorage.setItem("tokenExpire", Date.now() + 2 * 60 * 60 * 1000);
+                    message.success(res.msg);
+                    navigate("/home");
+                } else {
+                    message.error(res.msg);
+                }
+            } catch (err) {
+                message.error("登录失败");
+            }
+        } else {
+            // 账号密码登录
+            const { username, password } = formData;
+            if (!username || !password) {
+                message.warning("请输入账号密码");
+                return;
+            }
+            try {
+                const res = await request.post("/user/login", {
+                    account: username,
+                    password: password,
+                });
+                if (res.status === 100) {
+                    localStorage.setItem("token", res.token);
+                    localStorage.setItem("tokenExpire", Date.now() + 2 * 60 * 60 * 1000);
+                    message.success(res.msg);
+                    navigate("/home");
+                } else {
+                    message.error(res.msg);
+                }
+            } catch (err) {
+                message.error("账号或密码错误");
+            }
+        }
+    };
+
+    // 🔥 切换登录方式
+    const toggleLoginMode = () => {
+        setIsCodeLogin(!isCodeLogin);
+        setFormData({
+            email: "",
+            code: "",
+            username: "",
+            password: "",
         });
-    } catch (err) {
-      message.error("验证码错误或登录失败");
-    }
-  };
+        setCountDown(0);
+    };
 
-  return (
-    <div style={{
-      maxWidth: "400px",
-      margin: "100px auto",
-      padding: "20px",
-      border: "1px solid #eee",
-      borderRadius: "8px"
-    }}>
-      <h2 style={{ textAlign: "center" }}>后台管理系统 - 登录</h2>
-      <form onSubmit={handleSubmit} style={{ marginTop: "20px" }}>
-        
-        {/* 邮箱 */}
-        <div style={{ marginBottom: "15px" }}>
-          <label>邮箱：</label>
-          <input
-            type="text"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-            placeholder="请输入邮箱"
-          />
-        </div>
-
-        {/* 验证码 + 发送按钮 */}
+    return (
         <div style={{
-          marginBottom: "15px",
-          display: "flex",
-          gap: "10px"
-        }}>
-          <input
-            type="text"
-            name="code"
-            value={formData.code}
-            onChange={handleChange}
-            style={{ flex: 1, padding: "8px" }}
-            placeholder="请输入验证码"
-          />
-          <button
-            type="button"
-            onClick={handleSendCode}
-            disabled={sending || countDown > 0}
-            style={{
-              padding: "8px 12px",
-              backgroundColor: countDown > 0 ? "#ccc" : "#1677ff",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: countDown > 0 ? "not-allowed" : "pointer",
+                maxWidth: "400px",
+                margin: "100px auto",
+                padding: "20px",
+                border: "1px solid #c6c6c6",
+                borderRadius: "8px",
             }}
-          >
-            {countDown > 0 ? `${countDown}秒后重发` : "发送验证码"}
-          </button>
-        </div>
-
-        {/* 登录按钮 */}
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: "10px",
-            backgroundColor: "#1677ff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
         >
-          登录
-        </button>
-      </form>
-    </div>
-  );
+            <div style={{
+                textAlign: "center",
+                marginBottom: 16,
+            }}>
+                <img 
+                    src={logoImg} 
+                    alt="logo" 
+                    style={{
+                        width: 80,        // 你可以改大小
+                        height: 80,       // 高宽等比例就行
+                        borderRadius: "50%",
+                        border: "1px solid #eee"
+                    }}
+                />
+            </div>
+            <h3 style={{ textAlign: "center" }}>后台管理系统 - 登录</h3>
+
+            {/* 🔥 单个切换文本，同一个位置点击切换 */}
+            <div className="toggle-login-mode"
+                 onClick={toggleLoginMode}>
+                {isCodeLogin ? "邮箱验证码登录" : "账号密码登录"}
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ marginTop: "20px" }}>
+                {isCodeLogin ? (
+                    // 邮箱验证码登录
+                    <div>
+                        <div style={{ marginBottom: "15px" }}>
+                            <input
+                                type="text"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                style={{ width: "100%", padding: "8px",  boxSizing: "border-box" }}
+                                placeholder="请输入邮箱"
+                            />
+                        </div>
+
+                        <div style={{ display: "flex", gap: "10px", marginBottom: 15 }}>
+                            <input
+                                type="text"
+                                name="code"
+                                value={formData.code}
+                                onChange={handleChange}
+                                style={{ flex: 1, padding: "8px" }}
+                                placeholder="请输入验证码"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleSendCode}
+                                disabled={sending || countDown > 0}
+                                style={{
+                                    padding: "8px 12px",
+                                    backgroundColor: sending || countDown > 0 ? "#ccc" : "#1677ff",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: 4,
+                                    cursor: sending || countDown > 0 ? "not-allowed" : "pointer",
+                                }}
+                            >
+                                {countDown > 0 ? `${countDown}秒` : "发送验证码"}
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    // 账号密码登录
+                    <div>
+                        <div style={{ marginBottom: "15px" }}>
+                            <input
+                                type="text"
+                                name="username"
+                                value={formData.username}
+                                onChange={handleChange}
+                                style={{ width: "100%", padding: "8px" ,  boxSizing: "border-box"}}
+                                placeholder="请输入账号"
+                            />
+                        </div>
+                        <div style={{  gap: "10px", marginBottom: 15}}>
+                            <input
+                                type="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                style={{ width: "100%", padding: "8px" ,  boxSizing: "border-box"}}
+                                placeholder="请输入密码"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* 登录按钮 */}
+                <button
+                    type="submit"
+                    style={{
+                        width: "100%",
+                        padding: "10px",
+                        backgroundColor: "#1677ff",
+                        //backgroundColor: "#1c8139",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                    }}
+                >
+                    登录
+                </button>
+            </form>
+        </div>
+    );
 };
 
 export default Login;

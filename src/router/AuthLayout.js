@@ -14,6 +14,7 @@ const AuthLayout = () => {
     localStorage.removeItem("tokenExpire");
     return <Navigate to="/login" replace />;
   }else{
+    localStorage.setItem("tokenExpire", Date.now() + 2 * 60  * 60 * 1000); //切换页面的时候更新时间，重新算（即2小时没有切换路由的操作，掉线重登）
     return <MyLayout/>
   }
 }

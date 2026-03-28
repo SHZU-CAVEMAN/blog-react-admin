@@ -46,7 +46,7 @@ const LeftMenu = ({collapsed}) => {
                 defaultSelectedKeys={['1']}
                 defaultOpenKeys={['sub1']}
                 mode="inline"
-                theme="dark"
+                theme="light"
                 style={{height:'100vh'}}
                 // 是否折叠
                 inlineCollapsed={collapsed}

@@ -20,12 +20,13 @@ service.interceptors.request.use(config => {
 // 响应拦截器
 service.interceptors.response.use(
   res => {
-    return res.data;
+    return res.data;  
   },
   error => {
     if (error.response && error.response.status === 401) {
       // 清除无效 token
       localStorage.removeItem("token");
+      localStorage.removeItem("tokenExpire");
       // 跳转到登录页
       window.location.href = "/login";
     }
