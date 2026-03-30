@@ -153,9 +153,8 @@ const Login = () => {
                     }}
                 />
             </div>
-            <h3 style={{ textAlign: "center" }}>后台管理系统 - 登录</h3>
+            <h3 style={{ textAlign: "center" }}>博客后台管理 - 登录</h3>
 
-            {/* 🔥 单个切换文本，同一个位置点击切换 */}
             <div className="toggle-login-mode"
                  onClick={toggleLoginMode}>
                 {isCodeLogin ? "邮箱验证码登录" : "账号密码登录"}

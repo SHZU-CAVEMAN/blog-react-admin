@@ -9,11 +9,7 @@ export const addCatagory = ()=>{
     return request.get("/category")
 }
 // 编辑 分类
-export const updateCategory = (id, data) => {
-  return request.put(`/category/${id}`, data);
+export const mergeCategory = (data) => {
+  return request.post("/category/mergeCategory", data);
 };
 
-// 删除 分类
-export const deleteCategory = (id) => {
-  return request.delete(`/category/${id}`);
-};

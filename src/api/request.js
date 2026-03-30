@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { message } from 'antd';
+
 
 // 创建实例
 const service = axios.create({
@@ -14,6 +14,7 @@ service.interceptors.request.use(config => {
   if (token) {
     config.headers.Authorization = token;
   }
+  //console.log("config对象",config);
   return config;
 });
 

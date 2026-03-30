@@ -1,26 +1,31 @@
-import { Space, Table, Button, Form, Input,Popconfirm,DatePicker,Row,Col} from 'antd';
+import { Space, Table, Button, Form, Input,Popconfirm,DatePicker,Row,Col,Select} from 'antd';
 import { useState,useEffect } from 'react';
 import dayjs from 'dayjs';
-import { 
-  getArticleList,
-} from '@/api/article'
+import { getArticleList} from '@/api/article'
+import { getCategoryList} from '@/api/category'
 const { Column } = Table;
+const { Option } = Select; // 👈 引入 Select
 
 const ArticleList = () => {
   const [form] = Form.useForm();
-  const [dataSource, setDataSource] = useState([]);
+  const [dataSource, setDataSource] = useState([]); // 文章列表
   const [editingKey, setEditingKey] = useState(null);  //  当前是否在编辑
+  const [categoryData, setCategoryData] = useState([]); // 分类
 
   useEffect(() => {
     fetchList();
   }, []); //空数组表示 只在第一次加载时执行一次
   
   const fetchList = async () => {
+    const category = await getCategoryList();
+    //console.log(res)
+    const categoryData = category.data.map(item =>({
+      ...item,
+    }))
+    setCategoryData(categoryData)
     const res = await getArticleList();
-    console.log(res)
     const list = res.data.map(item =>({
       ...item,
-      //key:item.id, // ?
     }))
     setDataSource(list);
   };
@@ -95,7 +100,13 @@ const ArticleList = () => {
               label="分类名"
               rules={[{ required: true, message: '请输入分类' }]}
             >
-              <Input placeholder="请输入分类名"/>
+                <Select placeholder="请选择分类" style={{ width: '100%' }}>
+                  {categoryData.map(item => (
+                    <Option key={item.id} value={item.id}>
+                      {item.name}
+                    </Option>
+                  ))}
+              </Select>
             </Form.Item>
           </Col>
         </Row>
@@ -127,7 +138,7 @@ const ArticleList = () => {
         </Form.Item>
       </Form>
       
-      {/*  表格 */}
+      {/*  表格——文章列表 */}
       <Table 
         dataSource={dataSource} 
         bordered 
