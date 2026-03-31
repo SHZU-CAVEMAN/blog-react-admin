@@ -1,11 +1,11 @@
-import { Space, Table, Button, Form, Input, Popconfirm, Collapse, Col, Row, message, Modal } from 'antd';
+import { Space, Table, Button, Form, Input, Collapse, Col, Row, message, Modal } from 'antd';
 import { useState, useEffect } from 'react';
-import { getCategoryList,mergeCategory } from '@/api/category'
+import { getCategoryList, mergeCategory, updateCategory, createCategory } from '@/api/category'
 const { Column } = Table;
 const { Panel } = Collapse;
 
 const ArticleCategory = () => {
-  const [dataSource, setDataSource] = useState([]);
+  const [dataSource, setDataSource] = useState([]); 
   const [form] = Form.useForm();
   const [editingKey, setEditingKey] = useState(null);  //  当前是否在编辑
   const [selectedRowKeys, setSelectedRowKeys] = useState([]); // 多选
@@ -17,44 +17,53 @@ const ArticleCategory = () => {
 
   const fetchList = async () => {
     const res = await getCategoryList();
-    //console.log(res)
+    //console.log("res",res)
     const list = res.data.map(item => ({
       ...item,
       key: item.id,
     }))
-    setDataSource(list);
+    setDataSource(list); // 触发组件重新渲染
   };
 
   // 提交（新增 + 编辑）
-  const handleSubmit = () => {
-    form.validateFields().then(values => {
-      // 处理 tags
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
       const newValues = {
-        ...values,
-        tags: values.tags ? values.tags.split(',') : [],
+        name: values.name,
+        alias: values.category_otherName,
+        description: values.intro,
+        number: values.number
       };
 
       if (editingKey) {
         // 编辑
-        setDataSource(prev =>
-          prev.map(item =>
-            item.key === editingKey ? { ...item, ...newValues } : item
-          )
-        );
+        try {
+          newValues.id = editingKey;
+          await updateCategory(newValues);
+          message.success('分类已更新');
+          fetchList();
+        } catch (error) {
+          message.error(error.msg || '更新失败，请重试');
+          return;
+        }
       } else {
         // 新增
-        setDataSource(prev => [
-          ...prev,
-          {
-            key: Date.now().toString(),
-            ...newValues,
-          },
-        ]);
+        try {
+          await createCategory(newValues);
+          message.success('分类已新增');
+          fetchList();
+        } catch (error) {
+          message.error(error.msg || '新增失败，请重试');
+          return;
+        }
       }
       // 清空
       form.resetFields();
       setEditingKey(null);
-    });
+    } catch (error) {
+      // 表单验证失败，不需要处理
+    }
   };
 
   //  编辑（回填核心）
@@ -64,11 +73,11 @@ const ArticleCategory = () => {
     });
     setEditingKey(record.key);
   };
+  const handleClear = () => {
+    form.resetFields();
+    setEditingKey(null);
+  }
 
-  //  删除
-  const handleDelete = (key) => {
-    setDataSource(prev => prev.filter(item => item.key !== key));
-  };
   const rowSelection = {
     selectedRowKeys,
     onChange: setSelectedRowKeys
@@ -83,29 +92,30 @@ const ArticleCategory = () => {
 
   // 执行合并
   const handleMerge = async () => {
-    const { newName } = await mergeForm.validateFields();
-    // 选中的分类
-    const selected = dataSource.filter(item => selectedRowKeys.includes(item.key)); //数组
-    const mergeFormdata = mergeForm.getFieldsValue() //对象，属性为form的name名
-  
-    // 合并分类 接口
-    const result = await mergeCategory({
-      sourceIds: selected.map(s => s.id),
-      name: mergeFormdata.newName,
-      alias: mergeFormdata.newcategory_otherName,
-      description: mergeFormdata.newIntro
-    });
-    if(result.status===200){
-      message.success(`分类已合并为：${newName}`);
-      setMergeModal(false);
-      mergeForm.resetFields(); 
-      setSelectedRowKeys([]);
-    }else{
-      message.error(result.msg);
-      return;
+    try {
+      await mergeForm.validateFields();
+      const selected = dataSource.filter(item => selectedRowKeys.includes(item.key));
+      const mergeFormdata = mergeForm.getFieldsValue();
+      
+      try {
+        await mergeCategory({
+          sourceIds: selected.map(s => s.id),
+          name: mergeFormdata.newName,
+          alias: mergeFormdata.newcategory_otherName,
+          description: mergeFormdata.newIntro
+        });
+        
+        message.success(`分类已合并为：${mergeFormdata.newName}`);
+        setMergeModal(false);
+        mergeForm.resetFields();
+        setSelectedRowKeys([]);
+        fetchList();
+      } catch (error) {
+        message.error(error.msg || '合并失败，请重试');
+      }
+    } catch (error) {
+      // 表单验证失败，不需要处理
     }
-
-    
   };
   return (
     <>
@@ -150,14 +160,21 @@ const ArticleCategory = () => {
               label="数量"
               rules={[{ required: true, message: '请输入数量' }]}
             >
-              <Input placeholder="请输入数量" disabled />
+              <Input placeholder="请输入数量" disabled={editingKey !== null} />
             </Form.Item>
           </Col>
 
-          <Col span={6}>
+          <Col span={2}>
             <Form.Item>
               <Button type="primary" onClick={handleSubmit}>
                 {editingKey ? '更新' : '新增'}
+              </Button>
+            </Form.Item>
+          </Col>
+          <Col span={4}>
+            <Form.Item>
+              <Button type="primary" onClick={handleClear}>
+                清空
               </Button>
             </Form.Item>
           </Col>
@@ -212,18 +229,6 @@ const ArticleCategory = () => {
               <Button type="link" onClick={() => handleEdit(record)}>
                 编辑
               </Button>
-
-              <Popconfirm
-                title="确定删除这条数据吗？"
-                onConfirm={() => handleDelete(record.key)}
-                okText="确定"
-                cancelText="取消"
-              >
-                <Button type="link" danger>
-                  删除
-                </Button>
-              </Popconfirm>
-
             </Space>
           )}
         />
