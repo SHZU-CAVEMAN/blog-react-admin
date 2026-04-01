@@ -1,16 +1,18 @@
-import { Space, Table, Button, Form, Input,Popconfirm,DatePicker,Row,Col,Select} from 'antd';
+import { Space, Table, Button, Form, Popconfirm, Collapse } from 'antd';
 import { useState,useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getArticleList} from '@/api/article'
 import { getCategoryList} from '@/api/category'
+import ArticleBaseFields from '@/components/ArticleBaseFields';
 const { Column } = Table;
-const { Option } = Select; // 👈 引入 Select
 
 const ArticleList = () => {
   const [form] = Form.useForm();
+  const navigate = useNavigate();
   const [dataSource, setDataSource] = useState([]); // 文章列表
   const [editingKey, setEditingKey] = useState(null);  //  当前是否在编辑
-  const [categoryData, setCategoryData] = useState([]); // 分类
+  const [categoryData, setCategoryData] = useState([]); // 分类 options
 
   useEffect(() => {
     fetchList();
@@ -18,46 +20,36 @@ const ArticleList = () => {
   
   const fetchList = async () => {
     const category = await getCategoryList();
-    //console.log(res)
-    const categoryData = category.data.map(item =>({
-      ...item,
-    }))
+    const categoryData = category.data.map(item => ({
+      value: String(item.id),
+      label: item.name,
+    }));
+
     setCategoryData(categoryData)
     const res = await getArticleList();
     const list = res.data.map(item =>({
       ...item,
-    }))
+      key: item.id,
+    }));
     setDataSource(list);
   };
   
   // 提交（新增 + 编辑）
   const handleSubmit = () => {
     form.validateFields().then(values => {
-      // 处理 tags
+      const categoryLabel = categoryData.find(item => item.value === values.category_id)?.label || '';
       const newValues = {
         ...values,
+        category_name: categoryLabel,
         publish_time: values.publish_time
           ? values.publish_time.format('YYYY/MM/DD')
           : '',
       };
-
-      if (editingKey) {
-        // 编辑
-        setDataSource(prev =>
-          prev.map(item =>
-            item.key === editingKey ? { ...item, ...newValues } : item
-          )
-        );
-      } else {
-        // 新增
-        setDataSource(prev => [
-          ...prev,
-          {
-            key: Date.now().toString(),
-            ...newValues,
-          },
-        ]);
-      }
+      setDataSource(prev =>
+        prev.map(item =>
+          item.key === editingKey ? { ...item, ...newValues } : item
+        )
+      );
       // 清空
       form.resetFields();
       setEditingKey(null);
@@ -66,6 +58,8 @@ const ArticleList = () => {
 
   //  编辑（回填核心）
   const handleEdit = (record) => {
+    console.log('编辑文章：', record);
+
     form.setFieldsValue({
       ...record,
       publish_time: record.publish_time
@@ -80,60 +74,35 @@ const ArticleList = () => {
     setDataSource(prev => prev.filter(item => item.key !== key));
   };
 
+  // 跳转到正文编辑页面
+  const handleEditContent = (record) => {
+    const articleId = record.id || record.key;
+    navigate(`/article/create?mode=edit&id=${articleId}`);
+  };
+
   return (
     <div data-color-mode="light">
+      <Collapse
+        defaultActiveKey={['1']}
+        items={[
+          {
+            key: '1',
+            label: '文章列表 操作说明',
+            children: <p>本页面可修改文章的基本信息，并且可以删除不需要的文章记录。</p>,
+          },
+        ]}
+        style={{ marginBottom: 16 }}
+      />
       {/*  上方表单（一行两个） */}
       <Form form={form} layout="vertical">
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="name"
-              label="文章名"
-              rules={[{ required: true, message: '请输入文章名' }]}
-            >
-              <Input placeholder="请输入文章名" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-              name="category_name"
-              label="分类名"
-              rules={[{ required: true, message: '请输入分类' }]}
-            >
-                <Select placeholder="请选择分类" style={{ width: '100%' }}>
-                  {categoryData.map(item => (
-                    <Option key={item.id} value={item.id}>
-                      {item.name}
-                    </Option>
-                  ))}
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="intro"
-              label="说明"
-              rules={[{ required: true, message: '请输入说明' }]}
-            >
-              <Input placeholder="请输入说明" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item
-                name="publish_time"
-                label="发表时间"
-              >
-                <DatePicker style={{ width: "100%" }} />
-            </Form.Item>
-          </Col>
-        </Row>
+        <ArticleBaseFields categoryOptions={categoryData} />
 
         <Form.Item>
-          <Button type="primary" onClick={handleSubmit}>
-                {editingKey ? '更新' : '新增'}
+          <Button 
+            type="primary" 
+            onClick={handleSubmit}
+            style={{ marginTop: 16 }}>
+                更新
           </Button>
         </Form.Item>
       </Form>
@@ -161,6 +130,10 @@ const ArticleList = () => {
             <Space>
               <Button type="link" onClick={() => handleEdit(record)}>
                 编辑
+              </Button>
+
+              <Button type="link" onClick={() => handleEditContent(record)}>
+                修改正文
               </Button>
 
               <Popconfirm
