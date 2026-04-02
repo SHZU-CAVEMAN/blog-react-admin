@@ -7,12 +7,13 @@ import { message } from 'antd';
 import { getCategoryList } from '@/api/category';
 import { addArticle, updateArticle,getArticleById } from '@/api/article';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
-import ArticleList from '@/components/ArticleList';
+
 
 const ArticleCreate = () => {
   const [content, setContent] = React.useState("**Hello Markdown**");
   const [categoryOptions, setCategoryOptions] = React.useState([]);
   const [form] = Form.useForm();
+  
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const mode = searchParams.get('mode');
@@ -81,19 +82,8 @@ const ArticleCreate = () => {
 
   return (
     <div data-color-mode="light">
-        {/* <Collapse
-          defaultActiveKey={['1']}
-          items={[
-            {
-              key: '1',
-              label: isEditMode ? '编辑文章 使用说明' : '新增文章 使用说明',
-              children: <p>暂无</p>,
-            },
-          ]}
-          style={{ marginBottom: 16 }}
-        /> */}
 
-       <Form
+      <Form
         form={form}
         layout="vertical"
         onFinish={handleSave}
@@ -101,20 +91,19 @@ const ArticleCreate = () => {
         <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
           <ArticleBaseFields categoryOptions={categoryOptions} />
         </div>
-
-        <Form.Item label="文章内容">
-          <MDEditor
-            value={content}
-            onChange={setContent}
-            height={400}
-          />
-        </Form.Item>
-
-        <Form.Item>
+        <Form.Item style={{ marginTop: 16, marginBottom: 16, textAlign: 'right' }}>
           <Button type="primary" htmlType="submit">
             {isEditMode ? '保存修改' : '保存文章'}
           </Button>
         </Form.Item>
+        <Form.Item >
+          <MDEditor
+            value={content}
+            onChange={setContent}
+            height={600}
+          />
+        </Form.Item>
+
 
       </Form>
   

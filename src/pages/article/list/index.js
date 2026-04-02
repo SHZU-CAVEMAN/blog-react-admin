@@ -97,11 +97,11 @@ const ArticleList = () => {
       <Form form={form} layout="vertical">
         <ArticleBaseFields categoryOptions={categoryData} />
 
-        <Form.Item>
+        <Form.Item style={{ marginTop: 16, marginBottom: 16, textAlign: 'right' }}>
           <Button 
             type="primary" 
             onClick={handleSubmit}
-            style={{ marginTop: 16 }}>
+          >
                 更新
           </Button>
         </Form.Item>
@@ -112,15 +112,14 @@ const ArticleList = () => {
         dataSource={dataSource} 
         bordered 
         size="small" 
-        style={{ marginTop: 8 }}
         pagination={{
           pageSize: 8,          // 每页条数
           showSizeChanger: false, // 不允许用户修改每页数量
           showQuickJumper: true, // 可输入页码跳转
         }}
       >
-        <Column title="文章名" dataIndex="name" key="name" />
-        <Column title="分类名" dataIndex="category_name" key="category_name" />
+        <Column title="文章名" dataIndex="name" key="name" width={200} />
+        <Column title="分类名" dataIndex="category_name" key="category_name" width={80} />
         <Column title="说明" dataIndex="intro" key="intro" />
         <Column title="发表时间" dataIndex="publish_time" key="publish_time" />
         <Column

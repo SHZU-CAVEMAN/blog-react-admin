@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';  //antd的图标就是一个组件
 import {  Menu } from 'antd';
 import { useNavigate, useLocation } from "react-router-dom";
+import { useThemeMode } from "@/config/themeContext";
 
 function getItem(label, key, icon, children, type) {
     return {
@@ -36,6 +37,7 @@ const items = [
 ];
 
 const LeftMenu = ({collapsed}) => {
+    const { isDark } = useThemeMode();
     // react 页面跳转 方法
     const navigate = useNavigate();
     // react 当前路由地址 对象
@@ -46,7 +48,7 @@ const LeftMenu = ({collapsed}) => {
                 defaultSelectedKeys={['1']}
                 defaultOpenKeys={['sub1']}
                 mode="inline"
-                theme="light"
+                theme={isDark ? 'dark' : 'light'}
                 style={{height:'100vh'}}
                 // 是否折叠
                 inlineCollapsed={collapsed}

@@ -1,10 +1,33 @@
 import {RouterProvider} from "react-router-dom";
+import { ConfigProvider, theme } from 'antd';
 import AppRouter from "./router";
+import { ThemeProvider, useThemeMode } from "./config/themeContext";
+
+const AppContent = () => {
+  const { isDark } = useThemeMode();
+
+  return (
+    <ConfigProvider
+      theme={{
+        algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: isDark
+          ? {
+              colorBgBase: '#2a2d31',
+              colorTextBase: '#e9eaec',
+            }
+          : {},
+      }}
+    >
+      <RouterProvider router={AppRouter}/>
+    </ConfigProvider>
+  );
+};
 
 function App() {
   return (
-    // AppRouter由 createBrowserRouter 创建，外面要包一层 RouterProvider （监听浏览器地址变化）
-    <RouterProvider router={AppRouter}/>
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   )
 }
 

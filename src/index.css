@@ -5,6 +5,22 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #f5f5f5;
+  color: #1f1f1f;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body.theme-dark {
+  background: #23262b;
+  color: #e9eaec;
+}
+
+.ant-table-tbody > tr.ant-table-row:hover > td {
+  background: #e6f4ff;
+}
+
+body.theme-dark .ant-table-tbody > tr.ant-table-row:hover > td {
+  background: #3a424d;
 }
 
 code {

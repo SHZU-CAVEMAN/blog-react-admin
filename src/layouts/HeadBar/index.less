@@ -1,10 +1,26 @@
 .head-bar{
     padding:10px;
 }
+
+.head-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .login-out{
     color:#666;
     font-size:14px;
+    cursor: pointer;
     &:hover { // &代表当前选择器本身，即.logout-text:hover
         color: #000; 
     }
+}
+
+body.theme-dark .login-out {
+    color: #d6d8db;
+}
+
+body.theme-dark .login-out:hover {
+    color: #ffffff;
 }

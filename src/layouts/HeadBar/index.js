@@ -1,11 +1,15 @@
 import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
+    BulbOutlined,
+    BulbFilled,
 }from '@ant-design/icons';
 import { Button } from 'antd';
+import { useThemeMode } from '@/config/themeContext';
 import "./index.less";
 
 function HeadBar({collapsed,onToggle}){
+    const { isDark, toggleTheme } = useThemeMode();
     // 退出登录逻辑
     const handleLogout = () => {
         // 清空所有登录信息
@@ -24,10 +28,15 @@ function HeadBar({collapsed,onToggle}){
                 {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             </Button>
 
-            <div className='login-out'
-                onClick={handleLogout}
-            >
-                退出登录
+            <div className='head-bar-actions'>
+                <Button type="default" onClick={toggleTheme}>
+                    {isDark ? <BulbFilled /> : <BulbOutlined />} {isDark ? '日间模式' : '夜间模式'}
+                </Button>
+                <div className='login-out'
+                    onClick={handleLogout}
+                >
+                    退出登录
+                </div>
             </div>
         </div>
     )
