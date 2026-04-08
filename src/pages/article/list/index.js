@@ -2,7 +2,7 @@ import { Space, Table, Button, Form, Popconfirm, message } from 'antd';
 import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { getArticleList,updateArticle} from '@/api/article'
+import { getArticleList,updateArticle,deleteArticle} from '@/api/article'
 import { getCategoryList} from '@/api/category'
 import ArticleBaseFields from '@/components/ArticleBaseFields';
 const { Column } = Table;
@@ -44,7 +44,7 @@ const ArticleList = () => {
           key: item.id,
         }))
         .sort((a, b) => Number(b.id || b.key || 0) - Number(a.id || a.key || 0));
-      console.log("文章信息：", res);
+      //console.log("文章信息：", res);
       setDataSource(list);
     } catch (error) {
       message.error(error?.msg || '获取文章列表失败，请稍后重试');
@@ -52,7 +52,7 @@ const ArticleList = () => {
     }
   };
   
-  // 提交（新增 + 编辑）
+  // 更新 （按钮）
   const handleSubmit = () => {
     form.validateFields().then(async values => {
       const categoryLabel = categoryData.find(item => item.value === values.categoryId)?.label || '';
@@ -67,8 +67,8 @@ const ArticleList = () => {
         ...newValues,
         id: editingKey,
       });
-       message.success('文章信息已更新');
-      // 更新 table
+      message.success('文章信息已更新');
+      // 更新 table （不发新请求）
       setDataSource(prev =>
         prev.map(item =>
           item.key === editingKey ? { ...item, ...newValues } : item
@@ -80,10 +80,8 @@ const ArticleList = () => {
     });
   };
 
-  //  编辑（回填核心）
+  //  编辑（回填到表单）
   const handleEdit = (record) => {
-    console.log('编辑文章：', record);
-
     form.setFieldsValue({
       ...record,
       publishTime: record.publishTime
@@ -94,8 +92,15 @@ const ArticleList = () => {
   };
 
   //  删除
-  const handleDelete = (key) => {
-    setDataSource(prev => prev.filter(item => item.key !== key));
+  const handleDelete = async (record) => {
+    const articleId = record.id || record.key;
+    if (!articleId) {
+      message.error('删除失败：未获取到文章ID');
+      return;
+    }
+    await deleteArticle(articleId);
+    message.success('文章已删除');
+    setDataSource(prev => prev.filter(item => item.key !== articleId));
   };
 
   // 跳转到正文编辑页面
@@ -149,8 +154,8 @@ const ArticleList = () => {
               </Button>
 
               <Popconfirm
-                title="确定删除这条数据吗？"
-                onConfirm={() => handleDelete(record.key)}
+                title="删除这之后文章状态为disabled"
+                onConfirm={() => handleDelete(record)}
                 okText="确定"
                 cancelText="取消"
               >
