@@ -161,9 +161,6 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
         minWidth: 0,
         overflow: 'hidden',
         padding: 0,
-        border: '1px solid #707070',
-        borderRadius: 8,
-  
         position: 'relative',
         boxSizing: 'border-box',
       }}
@@ -202,7 +199,7 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
               <Row gutter={16}>
                 <Col span={columnSpan}>
                   <Form.Item
-                    name="name"
+                    name="title"
                     label="文章名"
                     rules={[{ required: true, message: '请输入文章名' }]}
                   >
@@ -218,7 +215,7 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
 
                 <Col span={columnSpan}>
                   <Form.Item
-                    name="category_id"
+                    name="categoryId"
                     label="分类"
                     rules={[{ required: true, message: '请选择分类' }]}
                   >
@@ -227,20 +224,30 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
                 </Col>
 
                 <Col span={columnSpan}>
-                  <Form.Item name="publish_time" label="发表时间">
+                  <Form.Item name="publishTime" label="发表时间">
                     <DatePicker style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
 
                 <Col span={columnSpan}>
                   <Form.Item
-                    name="intro"
+                    name="summary"
                     label="说明"
                     rules={[{ required: true, message: '请输入说明' }]}
                   >
                     <Input placeholder="请输入说明" />
                   </Form.Item>
                 </Col>
+
+                <Col span={columnSpan}>
+                  <Form.Item
+                    name="status"
+                    label="状态"
+                  >
+                    <Input disabled/>
+                  </Form.Item>
+                </Col>
+
               </Row>
             ),
           },

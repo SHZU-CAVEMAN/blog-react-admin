@@ -32,6 +32,7 @@ service.interceptors.response.use(
       // 跳转到登录页
       window.location.href = "/login";
     }
+    return Promise.reject(error.response?.data || error);
   }
 );
 

@@ -25,8 +25,8 @@ const items = [
     getItem('引导页', '/guide', <DesktopOutlined />),
     getItem('权限管理', '/permission', <ContainerOutlined />),
     getItem('文章管理', '/article', <MailOutlined />, [
-        getItem('文章新增', '/article/create'),
-        getItem('文章修改和查看', '/article/list'),
+        getItem('编辑发布', '/article/create'),
+        getItem('文章列表', '/article/list'),
         getItem('分类管理', '/article/category'),
     ]),
     getItem('其他', '/other', <AppstoreOutlined />, [
