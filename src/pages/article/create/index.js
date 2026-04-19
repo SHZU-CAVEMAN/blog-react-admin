@@ -7,6 +7,7 @@ import { message } from 'antd';
 import { getCategoryList } from '@/api/category';
 import { addArticle, updateArticle,getArticleById ,publishArticle} from '@/api/article';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
+import './index.less';
 
 
 const ArticleCreate = () => {
@@ -189,6 +190,7 @@ const ArticleCreate = () => {
         </Form.Item>
         <Form.Item >
           <MDEditor
+            className="article-md-editor"
             value={content}
             onChange={setContent}
             height={600}

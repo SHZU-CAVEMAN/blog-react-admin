@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { getArticleList,updateArticle,deleteArticle} from '@/api/article'
 import { getCategoryList} from '@/api/category'
 import ArticleBaseFields from '@/components/ArticleBaseFields';
+import './index.less';
 const { Column } = Table;
 
 const ArticleList = () => {
@@ -109,6 +110,20 @@ const ArticleList = () => {
     navigate(`/article/create?mode=edit&id=${articleId}`);
   };
 
+  const getStatusMeta = (status) => {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'disabled' || normalized === 'diabled') {
+      return { key: 'disabled', label: 'disabled' };
+    }
+    if (normalized === 'active' || normalized === 'actice') {
+      return { key: 'active', label: 'active' };
+    }
+    if (normalized === 'draft') {
+      return { key: 'draft', label: 'draft' };
+    }
+    return { key: 'unknown', label: status || '-' };
+  };
+
   return (
     <div data-color-mode="light">
       {/*  上方表单（一行两个） */}
@@ -130,6 +145,12 @@ const ArticleList = () => {
         dataSource={dataSource} 
         bordered 
         size="small" 
+        rowClassName={(record) => (
+          record.key === editingKey ? 'article-list-row article-list-row-active' : 'article-list-row'
+        )}
+        onRow={(record) => ({
+          onClick: () => handleEdit(record),
+        })}
         pagination={{
           pageSize: 8,          // 每页条数
           showSizeChanger: false, // 不允许用户修改每页数量
@@ -139,17 +160,26 @@ const ArticleList = () => {
         <Column title="文章名" dataIndex="title" key="title" width={200} />
         <Column title="分类名" dataIndex="categoryName" key="categoryName" width={80} />
         <Column title="说明" dataIndex="summary" key="summary" />
+        <Column
+          title="状态"
+          dataIndex="status"
+          key="status"
+          render={(status) => {
+            const meta = getStatusMeta(status);
+            return <span className={`status-pill status-${meta.key}`}>{meta.label}</span>;
+          }}
+        />
         <Column title="发表时间" dataIndex="publishTime" key="publishTime" />
         <Column
           title="操作"
           key="action"
           render={(_, record) => (
             <Space>
-              <Button type="link" onClick={() => handleEdit(record)}>
+              {/* <Button type="link" onClick={(e) => { e.stopPropagation(); handleEdit(record); }}>
                 编辑
-              </Button>
+              </Button> */}
 
-              <Button type="link" onClick={() => handleEditContent(record)}>
+              <Button type="link" onClick={(e) => { e.stopPropagation(); handleEditContent(record); }}>
                 修改正文
               </Button>
 
@@ -159,7 +189,7 @@ const ArticleList = () => {
                 okText="确定"
                 cancelText="取消"
               >
-                  <Button type="link" danger>
+                  <Button type="link" danger onClick={(e) => e.stopPropagation()}>
                     删除
                   </Button>
               </Popconfirm>
