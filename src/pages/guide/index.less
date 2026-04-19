@@ -1,0 +1,131 @@
+.guide-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.guide-hero {
+  overflow: hidden;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(22, 119, 255, 0.18), transparent 30%),
+    linear-gradient(135deg, #f6fbff 0%, #fefaf3 52%, #fff 100%);
+}
+
+.guide-hero__content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guide-hero__content .ant-typography {
+  margin-bottom: 0;
+}
+
+.guide-hero__tips {
+  color: #925400;
+  font-weight: 500;
+}
+
+.guide-feature-card {
+  height: 100%;
+  border-radius: 20px;
+}
+
+.guide-feature-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%; // 使内容区撑满卡片高度，方便按钮底部对齐
+}
+
+.guide-feature-card .ant-btn-link {
+  margin-top: auto; // 将链接按钮推到内容区底部
+  padding-left: 0; // 链接按钮左对齐
+}
+
+.guide-feature-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 22px;
+  color: #fff;
+  flex-shrink: 0; // 防止图标缩小
+}
+
+.guide-feature-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px; // 图标和标题之间的间距
+}
+
+.guide-feature-card__header .ant-typography {
+  margin-bottom: 0; // 去掉标题下方默认的 margin
+}
+
+.guide-feature-card.article .guide-feature-card__icon {
+  background: linear-gradient(135deg, #1677ff, #69b1ff);
+}
+
+.guide-feature-card.create .guide-feature-card__icon {
+  background: linear-gradient(135deg, #13c2c2, #36cfc9);
+}
+
+.guide-feature-card.category .guide-feature-card__icon {
+  background: linear-gradient(135deg, #fa8c16, #ffc069);
+}
+
+.guide-feature-card.comment .guide-feature-card__icon {
+  background: linear-gradient(135deg, #722ed1, #b37feb);
+}
+
+.guide-content-row {
+  margin-top: 4px;
+}
+
+.guide-panel {
+  border-radius: 20px;
+}
+
+.guide-quick-actions {
+  width: 100%;
+}
+
+.quick-actions-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.guide-note-box {
+  padding: 16px;
+  border-radius: 16px;
+  background: #fafafa;
+}
+
+.guide-note-box .ant-typography {
+  margin-bottom: 0;
+}
+
+body.theme-dark .guide-hero {
+  background:
+    radial-gradient(circle at top left, rgba(22, 119, 255, 0.2), transparent 30%),
+    linear-gradient(135deg, #111b26 0%, #1a1510 52%, #141414 100%);
+}
+
+body.theme-dark .guide-hero__tips {
+  color: #ffd666;
+}
+
+body.theme-dark .guide-note-box {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 768px) {
+  .guide-hero {
+    border-radius: 20px;
+  }
+}
