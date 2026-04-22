@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
-import request from "@/api/request";
+import { loginUser, sendEmailCode } from "@/api/user";
 import "./index.less"
 import logoImg from "@/assets/logoimage.png"; 
+
+const resolveUserRole = (res, account) => {
+    const roleFromApi = res?.role || res?.userRole;
+    if (roleFromApi === "admin" || roleFromApi === "user") {
+        return roleFromApi;
+    }
+    return account === "admin" ? "admin" : "user";
+};
 
 const Login = () => {
     const navigate = useNavigate();
@@ -43,7 +51,7 @@ const Login = () => {
         }
         try {
             setSending(true);
-            await request.post("/verify/email", { email });
+            await sendEmailCode({ email });
             message.success("验证码发送成功！");
             setCountDown(60);
         } catch (err) {
@@ -76,12 +84,14 @@ const Login = () => {
                 return;
             }
             try {
-                const res = await request.post("/user/login", {
+                const res = await loginUser({
                     account: email,
                     password: code,
                 });
                 if (res.status === 100) {
+                    const userRole = resolveUserRole(res, email);
                     localStorage.setItem("token", res.token);
+                    localStorage.setItem("userRole", userRole);
                     localStorage.setItem("tokenExpire", Date.now() + 2 * 60 * 60 * 1000);
                     message.success(res.msg);
                     navigate("/home");
@@ -99,12 +109,14 @@ const Login = () => {
                 return;
             }
             try {
-                const res = await request.post("/user/login", {
+                const res = await loginUser({
                     account: username,
                     password: password,
                 });
                 if (res.status === 100) {
+                    const userRole = resolveUserRole(res, username);
                     localStorage.setItem("token", res.token);
+                    localStorage.setItem("userRole", userRole);
                     localStorage.setItem("tokenExpire", Date.now() + 2 * 60 * 60 * 1000);
                     message.success(res.msg);
                     navigate("/home");

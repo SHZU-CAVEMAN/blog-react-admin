@@ -5,6 +5,7 @@ import AuthLayout from "./AuthLayout";
 import Home from "@/pages/home";
 import Guide from "@/pages/guide";
 import Permission from "@/pages/permission";
+import Forbidden from "@/pages/forbidden";
 
 import ArticleCreate from "@/pages/article/create";
 import ArticleList from "@/pages/article/list";
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
     children: [
       { path: "home", element: <Home /> },
       { path: "guide", element: <Guide /> },
+      { path: "forbidden", element: <Forbidden /> },
       // 权限管理 界面
       { path: "permission", element: <Permission /> },
 
