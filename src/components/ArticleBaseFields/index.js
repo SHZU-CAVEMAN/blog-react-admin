@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form, Input, Select, DatePicker, Row, Col, Collapse } from 'antd';
+import PictureUploadField from '@/components/PictureUploadField';
 
 const ArticleBaseFields = ({ categoryOptions = [] }) => {
   const rootRef = useRef(null); //组件根节点
@@ -16,6 +17,7 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
     const marginRight = parseFloat(style.marginRight) || 0;
     return el.offsetWidth + marginLeft + marginRight;
   }, []);
+  
   // 2 计算当前组件在这一行里 “最多还能有多宽” （父容器宽度 - 兄弟占用宽度 = 当前组件可用最大宽度）
   const getDynamicMaxWidth = useCallback(() => {
     const rootElement = rootRef.current;
@@ -41,6 +43,7 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
     });
     return Math.max(0, parentWidth - occupiedWidth);
   }, [getSiblingOuterWidth]);
+
   // 3 限制宽度在合理范围内
   const clampWidth = useCallback((nextWidth) => {
     const maxWidth = getDynamicMaxWidth();
@@ -50,6 +53,7 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
     }
     return Math.min(Math.max(nextWidth, minWidth), maxWidth);
   }, [getDynamicMaxWidth]);
+
   // 4 拖拽交互
   const startResize = (side, e) => {
     e.preventDefault();
@@ -77,6 +81,7 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   };
+
   // 5 内部变化
   useEffect(() => {
     const element = containerRef.current;
@@ -111,6 +116,9 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
       observer.disconnect();
     };
   }, [boxWidth, clampWidth]);
+
+  const textColumnSpan = columnSpan === 8 ? 12 : 24;
+
   // 6 外部变化 时将宽度变回合理范围内
   useEffect(() => {
     // 浏览器窗口变化 
@@ -197,57 +205,63 @@ const ArticleBaseFields = ({ categoryOptions = [] }) => {
             label: '文章信息',
             children: (
               <Row gutter={16}>
-                <Col span={columnSpan}>
-                  <Form.Item
-                    name="title"
-                    label="文章名"
-                    rules={[{ required: true, message: '请输入文章名' }]}
-                  >
-                    <Input placeholder="请输入文章名" />
-                  </Form.Item>
+                <Col span={columnSpan === 24 ? 24 : 16}>
+                  <Row gutter={16}>
+                    <Col span={textColumnSpan}>
+                      <Form.Item
+                        name="title"
+                        label="文章名"
+                        rules={[{ required: true, message: '请输入文章名' }]}
+                      >
+                        <Input placeholder="请输入文章名" />
+                      </Form.Item>
+                    </Col>
+
+                    <Col span={textColumnSpan}>
+                      <Form.Item
+                        name="categoryId"
+                        label="分类"
+                        rules={[{ required: true, message: '请选择分类' }]}
+                      >
+                        <Select placeholder="请选择分类" options={categoryOptions} />
+                      </Form.Item>
+                    </Col>
+
+                    <Col span={textColumnSpan}>
+                      <Form.Item name="publishTime" label="发表时间">
+                        <DatePicker style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+
+                    <Col span={textColumnSpan}>
+                      <Form.Item
+                        name="summary"
+                        label="说明"
+                        rules={[{ required: true, message: '请输入说明' }]}
+                      >
+                        <Input placeholder="请输入说明" />
+                      </Form.Item>
+                    </Col>
+
+                    <Col span={textColumnSpan}>
+                      <Form.Item
+                        name="status"
+                        label="状态"
+                      >
+                        <Input disabled />
+                      </Form.Item>
+                    </Col>
+                  </Row>
                 </Col>
 
-                <Col span={columnSpan}>
-                  <Form.Item name="picture" label="图片地址">
-                    <Input placeholder="https://image.xxx.com/a.png" />
+                <Col span={columnSpan === 24 ? 24 : 8}>
+                  <Form.Item label="图片">
+                    <PictureUploadField />
+                  </Form.Item>
+                  <Form.Item name="picture" hidden>
+                    <Input />
                   </Form.Item>
                 </Col>
-
-                <Col span={columnSpan}>
-                  <Form.Item
-                    name="categoryId"
-                    label="分类"
-                    rules={[{ required: true, message: '请选择分类' }]}
-                  >
-                    <Select placeholder="请选择分类" options={categoryOptions} />
-                  </Form.Item>
-                </Col>
-
-                <Col span={columnSpan}>
-                  <Form.Item name="publishTime" label="发表时间">
-                    <DatePicker style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-
-                <Col span={columnSpan}>
-                  <Form.Item
-                    name="summary"
-                    label="说明"
-                    rules={[{ required: true, message: '请输入说明' }]}
-                  >
-                    <Input placeholder="请输入说明" />
-                  </Form.Item>
-                </Col>
-
-                <Col span={columnSpan}>
-                  <Form.Item
-                    name="status"
-                    label="状态"
-                  >
-                    <Input disabled/>
-                  </Form.Item>
-                </Col>
-
               </Row>
             ),
           },
