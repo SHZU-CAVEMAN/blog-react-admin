@@ -1,25 +1,28 @@
-import {useState,useEffect}  from "react";
-import MDEditor from "@uiw/react-md-editor";
+import { useState, useEffect } from 'react';
+import MDEditor from '@uiw/react-md-editor';
 import dayjs from 'dayjs';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Form, Button } from "antd";
+import { Form, Button } from 'antd';
 import { message } from 'antd';
 import { getCategoryList } from '@/api/category';
-import { addArticle, updateArticle,getArticleById ,publishArticle} from '@/api/article';
+import { addArticle, updateArticle, getArticleById, publishArticle } from '@/api/article';
+import { uploadSingleFile } from '@/api/upload';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
 import './index.less';
 
-
 const ArticleCreate = () => {
-  const [content, setContent] = useState("**Hello Markdown**");
+  // 文件服务地址：上传接口返回 content_key，前端在这里拼成可访问图片 URL
+  const FILE_BASE_URL = 'http://127.0.0.1:81/uploadFiles/';
+  const [content, setContent] = useState('**Hello Markdown**');
   const [categoryOptions, setCategoryOptions] = useState([]);
+  const [selectedPictureFile, setSelectedPictureFile] = useState(null);
   const [submittingAction, setSubmittingAction] = useState('');
   const [form] = Form.useForm();
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode');
-  const routeArticleId = searchParams.get('id');  // 别的页面传过来的文章id
+  const routeArticleId = searchParams.get('id');
   const [currentArticleId, setCurrentArticleId] = useState(routeArticleId || '');
   const isEditMode = mode === 'edit' && !!(currentArticleId || routeArticleId);
 
@@ -36,29 +39,32 @@ const ArticleCreate = () => {
           value: String(item.id),
           label: item.name,
         }));
-        setCategoryOptions(options);  
+        setCategoryOptions(options);
+
         if (!isEditMode) {
           return;
         }
-        // 2 根据 id 获取文章信息
+        // 2 根据文章id获取文章详情并初始化表单
         const { data: currenArticle } = await getArticleById(currentArticleId);
         if (!currenArticle) {
           message.error('未找到要编辑的文章');
           return;
         }
-        //console.log("当前文章信息：", currenArticle);
-        // 3 初始化表单
+
         form.setFieldsValue({
           title: currenArticle.title || currenArticle.name || '',
-          picture: currenArticle.picture || currenArticle.cover || '',
-          categoryId: currenArticle.categoryId || currenArticle.category_id ? String(currenArticle.categoryId || currenArticle.category_id) : undefined,
+          picture: normalizePictureUrl(currenArticle.picture || currenArticle.cover || ''),
+          categoryId: currenArticle.categoryId || currenArticle.category_id
+            ? String(currenArticle.categoryId || currenArticle.category_id)
+            : undefined,
           publishTime: currenArticle.publishTime || currenArticle.publish_time
             ? dayjs(currenArticle.publishTime || currenArticle.publish_time)
             : null,
           summary: currenArticle.summary || currenArticle.intro || '',
           status: currenArticle.status || '',
         });
-        // 4 初始化 md 内容
+        // 3 初始化 content 和 selectedPictureFile 的状态
+        setSelectedPictureFile(null);
         setContent(currenArticle.content || '');
       } catch (error) {
         message.error(error?.message || error?.msg || '初始化页面失败');
@@ -83,28 +89,51 @@ const ArticleCreate = () => {
     };
   };
 
-  
-  // 新建文章：调用新增接口，保存表单和 Markdown 正文
+  const normalizePictureUrl = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+    if (/^https?:\/\//i.test(raw)) {
+      return raw;
+    }
+    const cleaned = raw.replace(/^\/+/, '').replace(/^uploadFiles\//i, '');
+    const hasExt = /\.[a-z0-9]+$/i.test(cleaned);
+    return `${FILE_BASE_URL}${hasExt ? cleaned : `${cleaned}.jpg`}`;
+  };
+
+  // 上传图片
+  const uploadPicture = async (file, articleId) => {
+    const res = await uploadSingleFile(file, articleId);
+    if (res?.status !== 0) {
+      throw new Error(res?.message || '上传失败');
+    } else {
+      message.success(res?.message || '上传成功');
+    }
+    return normalizePictureUrl(res.content_key);
+  };
+
+  // 新建文章
   const handleCreateNew = async () => {
     try {
+      setSubmittingAction('create');
       const values = await form.validateFields(['title', 'categoryId', 'summary', 'picture', 'publishTime']);
       const payload = buildPayload(values, 'create');
-      setSubmittingAction('create');
-
-      // 先清空旧 id，避免从编辑态进入新建时误用旧文章 id
-      setCurrentArticleId('');
-      navigate('/article/create', { replace: true });
 
       const response = await addArticle(payload);
       if (response?.status !== 0) {
         throw new Error(response?.message || '新建失败，请重试');
       }
       const createdId = response?.id;
-      debugger
       if (createdId) {
         const nextId = String(createdId);
         setCurrentArticleId(nextId);
         navigate(`/article/create?mode=edit&id=${nextId}`, { replace: true });
+
+        if (selectedPictureFile) {
+          const pictureUrl = await uploadPicture(selectedPictureFile, nextId);
+          form.setFieldValue('picture', pictureUrl);
+        }
       } else {
         message.warning('新建成功，但接口未返回文章ID，后续请从列表页重新进入编辑');
       }
@@ -119,29 +148,34 @@ const ArticleCreate = () => {
       setSubmittingAction('');
     }
   };
-  // 修改已有文章
+
+  // 修改文章
   const handleSubmitByAction = async (action) => {
     try {
+      setSubmittingAction(action);
       const values = await form.validateFields();
       const payload = buildPayload(values, action);
-      setSubmittingAction(action);
       if (!currentArticleId) {
         message.warning('请先点击新建生成文章，再进行保存或发布');
         return;
       }
-  
-      // 修改已有文章
-      if(action==="save"){
+
+      if (action === 'save') {
         await updateArticle({
           ...payload,
           id: Number(currentArticleId),
         });
       }
-      if(action==="publish"){
+      if (action === 'publish') {
         await publishArticle({
           ...payload,
           id: Number(currentArticleId),
         });
+      }
+
+      if (selectedPictureFile) {
+        const pictureUrl = await uploadPicture(selectedPictureFile, currentArticleId);
+        form.setFieldValue('picture', pictureUrl);
       }
 
       message.success(action === 'publish' ? '文章已发布' : '文章已保存');
@@ -158,13 +192,13 @@ const ArticleCreate = () => {
 
   return (
     <div data-color-mode="light">
-
-      <Form
-        form={form}
-        layout="vertical"
-      >
+      <Form form={form} layout="vertical">
         <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
-          <ArticleBaseFields categoryOptions={categoryOptions} />
+          <ArticleBaseFields
+            categoryOptions={categoryOptions}
+            selectedPictureFile={selectedPictureFile}
+            onSelectedPictureFileChange={setSelectedPictureFile}
+          />
         </div>
         <Form.Item style={{ marginTop: 16, marginBottom: 16, textAlign: 'right' }}>
           <Button
@@ -188,7 +222,7 @@ const ArticleCreate = () => {
             发布
           </Button>
         </Form.Item>
-        <Form.Item >
+        <Form.Item>
           <MDEditor
             className="article-md-editor"
             value={content}
@@ -196,10 +230,7 @@ const ArticleCreate = () => {
             height={600}
           />
         </Form.Item>
-
-
       </Form>
-  
     </div>
   );
 };

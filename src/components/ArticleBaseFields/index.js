@@ -1,8 +1,8 @@
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form, Input, Select, DatePicker, Row, Col, Collapse } from 'antd';
 import PictureUploadField from '@/components/PictureUploadField';
 
-const ArticleBaseFields = forwardRef(({ categoryOptions = [], onConfirmUpload }, pictureUploadRef) => {
+const ArticleBaseFields = ({ categoryOptions = [], selectedPictureFile, onSelectedPictureFileChange }) => {
   const rootRef = useRef(null); //组件根节点
   const containerRef = useRef(null);  // 被设置宽度的盒子
   const resizeRef = useRef(null); // 保存拖拽中的临时数据 
@@ -263,7 +263,10 @@ const ArticleBaseFields = forwardRef(({ categoryOptions = [], onConfirmUpload },
 
                 <Col span={columnSpan === 24 ? 24 : 8}>
                   <Form.Item label="图片">
-                    <PictureUploadField ref={pictureUploadRef} onConfirmUpload={onConfirmUpload} />
+                    <PictureUploadField
+                      selectedFile={selectedPictureFile}
+                      onSelectedFileChange={onSelectedPictureFileChange}
+                    />
                   </Form.Item>
                   <Form.Item name="picture" hidden>
                     <Input />
@@ -277,7 +280,7 @@ const ArticleBaseFields = forwardRef(({ categoryOptions = [], onConfirmUpload },
     </div>
     </div>
   );
-});
+};
 
 export default ArticleBaseFields;
 

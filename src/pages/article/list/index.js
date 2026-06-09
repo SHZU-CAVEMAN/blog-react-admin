@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getArticleList,updateArticle,deleteArticle} from '@/api/article'
 import { getCategoryList} from '@/api/category'
+import { uploadSingleFile } from '@/api/upload';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
 import './index.less';
 const { Column } = Table;
 
 const ArticleList = () => {
+  const FILE_BASE_URL = 'http://127.0.0.1:81/uploadFiles/'; // 文件服务地址：上传接口返回 content_key，前端在这里拼成可访问图片 URL
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const [dataSource, setDataSource] = useState([]); // 文章列表
@@ -18,10 +20,24 @@ const ArticleList = () => {
   const [filterCategoryId, setFilterCategoryId] = useState(undefined); // 分类筛选
   const [filterCategoryLabel, setFilterCategoryLabel] = useState(''); // 分类筛选标签
   const [filterStatus, setFilterStatus] = useState(undefined); // 状态筛选
+  const [selectedPictureFile, setSelectedPictureFile] = useState(null);
 
   useEffect(() => {
     fetchList();
   }, []); //空数组表示 只在第一次加载时执行一次
+
+  const normalizePictureUrl = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+    if (/^https?:\/\//i.test(raw)) {
+      return raw;
+    }
+    const cleaned = raw.replace(/^\/+/, '').replace(/^uploadFiles\//i, '');
+    const hasExt = /\.[a-z0-9]+$/i.test(cleaned);
+    return `${FILE_BASE_URL}${hasExt ? cleaned : `${cleaned}.jpg`}`;
+  };
   
   const fetchList = async () => {
     try {
@@ -41,12 +57,13 @@ const ArticleList = () => {
       const list = articleItems
         .map(item => ({
           ...item,
+          picture: normalizePictureUrl(item.picture || item.cover || ''),
           title: item.title || item.name || '',
           categoryId: item.categoryId || item.category_id ? String(item.categoryId || item.category_id) : undefined,
           categoryName: item.categoryName || item.category_name || '',
           summary: item.summary || item.intro || '',
           publishTime: item.publishTime || item.publish_time || '',
-          key: item.id,
+          key: item.id, // 把文章id设置为表格行的 key
         }))
         .sort((a, b) => Number(b.id || b.key || 0) - Number(a.id || a.key || 0));
       //console.log("文章信息：", res);
@@ -56,10 +73,23 @@ const ArticleList = () => {
       setDataSource([]);
     }
   };
+
+  const uploadPicture = async (file, articleId) => {
+    const res = await uploadSingleFile(file, articleId);
+    if (res?.status !== 0) {
+      throw new Error(res?.message || '上传失败');
+    }
+    return normalizePictureUrl(res.content_key);
+  };
   
   // 更新 （按钮）
   const handleSubmit = () => {
     form.validateFields().then(async values => {
+      // 文章id
+      if (!editingKey) {
+        message.warning('请先选择要更新的文章');
+        return;
+      }
       const categoryLabel = categoryData.find(item => item.value === values.categoryId)?.label || '';
       const newValues = {
         ...values,
@@ -72,21 +102,34 @@ const ArticleList = () => {
         ...newValues,
         id: editingKey,
       });
+      // 更新图片
+      if (selectedPictureFile) {
+        const pictureUrl = await uploadPicture(selectedPictureFile, editingKey);
+        newValues.picture = pictureUrl;
+        form.setFieldValue('picture', pictureUrl);
+      }
+
       message.success('文章信息已更新');
       // 更新 table （不发新请求）
+      /*
       setDataSource(prev =>
         prev.map(item =>
           item.key === editingKey ? { ...item, ...newValues } : item
         )
       );
+      */
+      // 更新后重新请求列表
+      await fetchList();
       // 清空 表单
       form.resetFields();
       setEditingKey(null);
+      setSelectedPictureFile(null);
     });
   };
 
   //  编辑（回填到表单）
   const handleEdit = (record) => {
+    //console.log('一行的数据：', record);
     const normalizedStatus = normalizeStatus(record.status);
     form.setFieldsValue({
       ...record,
@@ -97,6 +140,7 @@ const ArticleList = () => {
         ? dayjs(record.publishTime)
         : null,
     });
+    setSelectedPictureFile(null);
     setEditingKey(record.key);
   };
 
@@ -217,7 +261,11 @@ const ArticleList = () => {
     <div data-color-mode="light">
       {/*  上方表单（一行两个） */}
       <Form form={form} layout="vertical">
-        <ArticleBaseFields categoryOptions={categoryData} />
+        <ArticleBaseFields
+          categoryOptions={categoryData}
+          selectedPictureFile={selectedPictureFile}
+          onSelectedPictureFileChange={setSelectedPictureFile}
+        />
 
         <Form.Item style={{ marginTop: 16, marginBottom: 16 }}>
           <div className="article-list-toolbar">

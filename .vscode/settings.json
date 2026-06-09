@@ -8,5 +8,8 @@
             "icon": "terminal-powershell"
         }
     },
+    "http.proxy": "http://127.0.0.1:9569",
+    "https.proxy": "http://127.0.0.1:9569",
+    "http.proxyStrictSSL": false
 
 }

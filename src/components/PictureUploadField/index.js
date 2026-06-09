@@ -1,34 +1,65 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form, Upload, Button, message } from 'antd';
 
-const PictureUploadField = ({ fieldName = 'picture' }) => {
+// 入参：文件名，文件对象，回调
+const PictureUploadField = ({ fieldName = 'picture', selectedFile, onSelectedFileChange }) => {
   const form = Form.useFormInstance(); // 拿到当前 Form（父级）对象的实例
-  const picture = Form.useWatch(fieldName, form); //  监听 pircture字段的值变化，变化后立即刷新
+  const picture = Form.useWatch(fieldName, form); //  监听 picture 字段的值变化，变化后组件重新渲染
   const areaHeight = 200;
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState('');
+  const prevSelectedFileRef = useRef(selectedFile);
 
-  // 上传前检查
+  useEffect(() => {
+    const prevSelectedFile = prevSelectedFileRef.current;
+    // 仅在 selectedFile 从有值变为空时清理，避免未传 selectedFile 的页面把预览误清掉
+    if (prevSelectedFile && !selectedFile && pendingPreviewUrl) {
+      URL.revokeObjectURL(pendingPreviewUrl);
+      setPendingPreviewUrl('');
+    }
+    prevSelectedFileRef.current = selectedFile;
+    return undefined;
+  }, [selectedFile, pendingPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingPreviewUrl) {
+        URL.revokeObjectURL(pendingPreviewUrl);
+      }
+    };
+  }, [pendingPreviewUrl]);
+
+  // 选择图片后只暂存，提交文章时再一起上传
+  // beforeUpload 里返回 false 阻止 Upload 组件自动上传
   const beforeUpload = useCallback((file) => {
-    // file 对象 继承自原生File对象，有个 type 属性，里面存的就是文件的 MIME 类型，比如 image/png、image/jpeg 等
     if (!file.type || !file.type.startsWith('image/')) {
       message.warning('只能上传图片文件');
-      // upload 组件提供了一个特殊的返回值 Upload.LIST_IGNORE，返回这个值可以告诉组件忽略这个文件，不要上传它，也不要把它添加到上传列表中，这样用户就看不到这个文件了，就相当于我们直接阻止了这个文件被上传和显示的过程
       return Upload.LIST_IGNORE;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      form.setFieldValue(fieldName, String(reader.result || '')); // 将图片的 base64 字符串设置到 Form 的字段值中，父级组件就能拿到这个值了
-    };
-    reader.onerror = () => {
-      message.error('图片读取失败，请重试');
-    };
-    reader.readAsDataURL(file); // 将图片文件读取为 base64 字符串
+    // 如果之前有待上传的图片，先撤销它的预览 URL，释放内存
+    if (pendingPreviewUrl) {
+      URL.revokeObjectURL(pendingPreviewUrl);
+    }
+    // 创建一个新的预览 URL
+    setPendingPreviewUrl(URL.createObjectURL(file));
+    // 把选中的文件对象传给父组件，父组件会在提交时处理上传
+    onSelectedFileChange?.(file);
     return false;
-  }, [fieldName, form]);
+  }, [onSelectedFileChange, pendingPreviewUrl]);
 
-  // 清空图片
+  // 清除：优先清除待上传图片；否则清除已上传图片地址
   const handleClear = useCallback(() => {
-    form.setFieldValue(fieldName, ''); 
-  }, [fieldName, form]);
+    if (selectedFile) {
+      onSelectedFileChange?.(null);
+      if (pendingPreviewUrl) {
+        URL.revokeObjectURL(pendingPreviewUrl);
+        setPendingPreviewUrl('');
+      }
+      return;
+    }
+    form.setFieldValue(fieldName, '');
+  }, [fieldName, form, onSelectedFileChange, pendingPreviewUrl, selectedFile]);
+
+  const previewSrc = pendingPreviewUrl || picture;
 
   return (
     <div>
@@ -54,10 +85,10 @@ const PictureUploadField = ({ fieldName = 'picture' }) => {
             height: areaHeight,  //不用百分比，否则可能会撑不开父层高度
           }}
         >
-          {picture ? (
+          {previewSrc ? (
             <>
               <img
-                src={picture}
+                src={previewSrc}
                 alt="文章图片预览"
                 style={{
                   position: 'absolute',
@@ -79,7 +110,7 @@ const PictureUploadField = ({ fieldName = 'picture' }) => {
                   fontSize: 13,
                 }}
               >
-                点击或拖拽更换图片
+                {selectedFile ? '已选择新图片，点击保存/发布时会一起上传' : '点击或拖拽更换图片'}
               </div>
             </>
           ) : (
@@ -97,19 +128,34 @@ const PictureUploadField = ({ fieldName = 'picture' }) => {
               }}
             >
               <p style={{ marginBottom: 8, fontWeight: 500 }}>点击或拖拽图片到此区域上传</p>
-              <p style={{ margin: 0, color: '#666' }}>支持本地图片选择，上传后自动预览</p>
+              <p style={{ margin: 0, color: '#666' }}>支持本地图片选择，保存/发布时上传</p>
             </div>
           )}
+
+          {previewSrc ? (
+            <Button
+              size="small"
+              type="default"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClear();
+              }}
+              // 点击清除按钮时阻止事件冒泡
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                zIndex: 3,
+                background: 'rgba(255, 255, 255, 0.92)',
+                borderColor: '#d9d9d9',
+              }}
+            >
+              清除
+            </Button>
+          ) : null}
         </div>
       </Upload.Dragger>
-
-      {picture ? (
-        <div style={{ marginTop: 8 }}>
-          <Button type="link" style={{ paddingLeft: 0 }} onClick={handleClear}>
-            清除图片
-          </Button>
-        </div>
-      ) : null}
     </div>
   );
 };
