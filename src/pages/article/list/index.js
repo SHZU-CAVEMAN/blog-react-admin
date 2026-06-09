@@ -87,8 +87,12 @@ const ArticleList = () => {
 
   //  编辑（回填到表单）
   const handleEdit = (record) => {
+    const normalizedStatus = normalizeStatus(record.status);
     form.setFieldsValue({
       ...record,
+      status: ['active', 'disabled', 'draft'].includes(normalizedStatus)
+        ? normalizedStatus
+        : undefined,
       publishTime: record.publishTime
         ? dayjs(record.publishTime)
         : null,
