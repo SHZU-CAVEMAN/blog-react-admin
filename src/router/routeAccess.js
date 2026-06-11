@@ -2,6 +2,10 @@
 export const routeAccess = {
   "/permission": ["admin"],
   "/article": ["admin"],
+  "/message": ["admin"],
+  "/comment": ["admin"],
+  "/friendLink": ["admin"],
+  "/picture": ["admin"],
 };
 
 export const getRequiredRoles = (pathname) => {

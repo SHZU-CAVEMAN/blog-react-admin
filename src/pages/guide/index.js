@@ -50,7 +50,7 @@ const Guide = () => {
       description: '集中处理评论、留言与友情链接，保持站点内容和互动质量。',
       icon: <MessageOutlined />,
       actionText: '查看评论',
-      path: '/other/comment',
+      path: '/comment',
       tone: 'guide-feature-card comment',
     },
   ]), []);
@@ -59,8 +59,8 @@ const Guide = () => {
     { label: '文章列表', path: '/article/list' },
     { label: '写文章', path: '/article/create' },
     { label: '分类管理', path: '/article/category' },
-    { label: '留言管理', path: '/other/message' },
-    { label: '友情链接', path: '/other/friendLink' },
+    { label: '留言管理', path: '/message' },
+    { label: '友情链接', path: '/friendLink' },
   ]), []);
 
   const usageSteps = useMemo(() => ([

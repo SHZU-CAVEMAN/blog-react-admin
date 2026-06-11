@@ -10,10 +10,11 @@ import Forbidden from "@/pages/forbidden";
 import ArticleCreate from "@/pages/article/create";
 import ArticleList from "@/pages/article/list";
 import ArticleCategory from "@/pages/article/category";
+import Picture from "@/pages/picture";
 
-import Message from "@/pages/other/message";
-import Comment from "@/pages/other/comment";
-import Link from "@/pages/other/link";
+import Message from "@/pages/message";
+import Comment from "@/pages/comment";
+import Link from "@/pages/link";
 
 import Login from "@/pages/login";
 
@@ -38,9 +39,10 @@ const router = createBrowserRouter([
       { path: "article/list", element: <ArticleList /> },
       { path: "article/category", element: <ArticleCategory /> },
 
-      { path: "other/message", element: <Message /> },
-      { path: "other/comment", element: <Comment /> },
-      { path: "other/friendLink", element: <Link /> },
+      { path: "message", element: <Message /> },
+      { path: "comment", element: <Comment /> },
+      { path: "friendLink", element: <Link /> },
+      { path: "picture", element: <Picture /> },
     ]
   },
   {
