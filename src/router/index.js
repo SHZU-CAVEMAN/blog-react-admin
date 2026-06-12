@@ -15,6 +15,7 @@ import Picture from "@/pages/picture";
 import Message from "@/pages/message";
 import Comment from "@/pages/comment";
 import Link from "@/pages/link";
+import LinkCategory from "@/pages/linkCategory";
 
 import Login from "@/pages/login";
 
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
       { path: "message", element: <Message /> },
       { path: "comment", element: <Comment /> },
       { path: "friendLink", element: <Link /> },
+      { path: "friendLink/category", element: <LinkCategory /> },
       { path: "picture", element: <Picture /> },
     ]
   },

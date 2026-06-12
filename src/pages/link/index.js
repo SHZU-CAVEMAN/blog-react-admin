@@ -1,70 +1,73 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Form, Input, Popconfirm, Select, Space, Table, Tag, message } from 'antd';
-
-const STORAGE_KEY = 'friendLinkList';
-
-const DEFAULT_LINKS = [
-  {
-    id: 1,
-    name: 'GitHub',
-    category: '开发',
-    url: 'https://github.com',
-    description: '开源代码托管平台',
-    status: 'enabled',
-  },
-  {
-    id: 2,
-    name: '掘金',
-    category: '社区',
-    url: 'https://juejin.cn',
-    description: '开发者内容社区',
-    status: 'enabled',
-  },
-];
+import {
+  createFriendlink,
+  deleteFriendlink,
+  getFriendlinkList,
+  updateFriendlink,
+} from '@/api/friendlink';
+import { getFriendlinkCategoryList } from '@/api/friendlinkCategory';
 
 const Link = () => {
   const [form] = Form.useForm();
   const [keyword, setKeyword] = useState('');
   const [filterCategory, setFilterCategory] = useState(undefined);
   const [dataSource, setDataSource] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
 
   useEffect(() => {
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (!cached) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_LINKS));
-      setDataSource(DEFAULT_LINKS);
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(cached);
-      setDataSource(Array.isArray(parsed) ? parsed : DEFAULT_LINKS);
-    } catch (error) {
-      setDataSource(DEFAULT_LINKS);
-    }
+    fetchCategoryList();
+    fetchFriendlinkList();
   }, []);
 
-  const persistLinks = (list) => {
-    setDataSource(list);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  const fetchCategoryList = async () => {
+    try {
+      const res = await getFriendlinkCategoryList();
+      const list = Array.isArray(res?.data) ? res.data : [];
+      const options = list
+        .filter((item) => String(item.status || '').toLowerCase() !== 'disabled')
+        .map((item) => ({
+          label: item.name,
+          value: Number(item.id),
+        }));
+      setCategoryOptions(options);
+    } catch (error) {
+      message.error(error?.message || error?.msg || '获取友链分类失败');
+      setCategoryOptions([]);
+    }
   };
 
-  const categoryOptions = useMemo(() => {
-    const categories = Array.from(new Set(
-      dataSource
-        .map((item) => String(item.category || '').trim())
-        .filter(Boolean)
-    ));
-    return categories.map((item) => ({ label: item, value: item }));
-  }, [dataSource]);
+  const fetchFriendlinkList = async () => {
+    try {
+      setListLoading(true);
+      const res = await getFriendlinkList();
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setDataSource(
+        list.map((item) => ({
+          ...item,
+          id: Number(item.id),
+          friendlink_category_id: Number(item.friendlink_category_id),
+          category_name: item.category_name || '',
+          status: item.status || 'enabled',
+        }))
+      );
+    } catch (error) {
+      message.error(error?.message || error?.msg || '获取友链列表失败');
+      setDataSource([]);
+    } finally {
+      setListLoading(false);
+    }
+  };
 
   const filteredData = useMemo(() => {
     const nextKeyword = keyword.trim().toLowerCase();
     return dataSource.filter((item) => {
-      const keywordMatched = !nextKeyword || [item.name, item.category, item.url, item.description]
+      const keywordMatched = !nextKeyword || [item.name, item.category_name, item.url, item.description]
         .some((field) => String(field || '').toLowerCase().includes(nextKeyword));
-      const categoryMatched = !filterCategory || item.category === filterCategory;
+      const categoryMatched = !filterCategory || Number(item.friendlink_category_id) === Number(filterCategory);
       return keywordMatched && categoryMatched;
     });
   }, [dataSource, filterCategory, keyword]);
@@ -72,61 +75,64 @@ const Link = () => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const nextItem = {
+      setSubmitting(true);
+      const payload = {
         name: values.name,
-        category: values.category,
+        friendlinkCategoryId: Number(values.friendlinkCategoryId),
         url: values.url,
         description: values.description,
         status: values.status,
       };
 
       if (editingId) {
-        const nextList = dataSource.map((item) => (
-          item.id === editingId ? { ...item, ...nextItem } : item
-        ));
-        persistLinks(nextList);
+        await updateFriendlink(editingId, payload);
         message.success('友链已更新');
       } else {
-        const nextList = [
-          ...dataSource,
-          {
-            id: Date.now(),
-            ...nextItem,
-          },
-        ];
-        persistLinks(nextList);
+        await createFriendlink(payload);
         message.success('友链已新增');
       }
 
       form.resetFields();
-      form.setFieldValue('category', undefined);
       form.setFieldValue('status', 'enabled');
       setEditingId(null);
+      await fetchFriendlinkList();
     } catch (error) {
-      // 表单校验失败时不额外处理
+      if (!error?.errorFields) {
+        message.error(error?.message || error?.msg || '提交失败');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleEdit = (record) => {
-    form.setFieldsValue(record);
+    form.setFieldsValue({
+      name: record.name,
+      friendlinkCategoryId: Number(record.friendlink_category_id),
+      url: record.url,
+      description: record.description,
+      status: record.status || 'enabled',
+    });
     setEditingId(record.id);
   };
 
-  const handleDelete = (record) => {
-    const nextList = dataSource.filter((item) => item.id !== record.id);
-    persistLinks(nextList);
-    if (editingId === record.id) {
-      form.resetFields();
-      form.setFieldValue('category', undefined);
-      form.setFieldValue('status', 'enabled');
-      setEditingId(null);
+  const handleDelete = async (record) => {
+    try {
+      await deleteFriendlink(record.id);
+      message.success('友链已删除');
+      if (editingId === record.id) {
+        form.resetFields();
+        form.setFieldValue('status', 'enabled');
+        setEditingId(null);
+      }
+      await fetchFriendlinkList();
+    } catch (error) {
+      message.error(error?.message || error?.msg || '删除失败');
     }
-    message.success('友链已删除');
   };
 
   const handleReset = () => {
     form.resetFields();
-    form.setFieldValue('category', undefined);
     form.setFieldValue('status', 'enabled');
     setEditingId(null);
   };
@@ -148,12 +154,15 @@ const Link = () => {
             <Input placeholder="请输入友链名称" />
           </Form.Item>
           <Form.Item
-            name="category"
+            name="friendlinkCategoryId"
             label="分类"
-            rules={[{ required: true, message: '请输入分类' }]}
+            rules={[{ required: true, message: '请选择分类' }]}
             style={{ minWidth: 180 }}
           >
-            <Input placeholder="例如：开发 / 社区" />
+            <Select
+              options={categoryOptions}
+              placeholder="请选择分类"
+            />
           </Form.Item>
           <Form.Item
             name="url"
@@ -173,7 +182,13 @@ const Link = () => {
             rules={[{ required: true, message: '请选择状态' }]}
             style={{ minWidth: 160 }}
           >
-            <Input placeholder="enabled / disabled" />
+            <Select
+              options={[
+                { label: 'enabled', value: 'enabled' },
+                { label: 'disabled', value: 'disabled' },
+              ]}
+              placeholder="请选择状态"
+            />
           </Form.Item>
         </Space>
 
@@ -187,7 +202,7 @@ const Link = () => {
 
         <Space style={{ marginBottom: 16 }} wrap>
           <Button type="primary" onClick={handleSubmit}>
-            {editingId ? '更新' : '新增'}
+            {submitting ? '提交中...' : (editingId ? '更新' : '新增')}
           </Button>
           <Button onClick={handleReset}>清空</Button>
           <Select
@@ -211,6 +226,7 @@ const Link = () => {
       <Table
         rowKey="id"
         dataSource={filteredData}
+        loading={listLoading}
         bordered
         pagination={{
           pageSize: 8,
@@ -220,7 +236,7 @@ const Link = () => {
         }}
       >
         <Table.Column title="友链名称" dataIndex="name" key="name" width={180} />
-        <Table.Column title="分类" dataIndex="category" key="category" width={120} />
+        <Table.Column title="分类" dataIndex="category_name" key="category_name" width={140} />
         <Table.Column
           title="友链地址"
           dataIndex="url"

@@ -47,7 +47,10 @@ const LeftMenu = ({collapsed}) => {
             ]));
             baseItems.splice(4, 0, getItem('消息推送', '/message', <NotificationOutlined />));
             baseItems.splice(5, 0, getItem('评论管理', '/comment', <CommentOutlined />));
-            baseItems.splice(6, 0, getItem('友链管理', '/friendLink', <LinkOutlined />));
+            baseItems.splice(6, 0, getItem('友链管理', '/friendLinkMenu', <LinkOutlined />, [
+                getItem('友链列表', '/friendLink'),
+                getItem('友链分类管理', '/friendLink/category'),
+            ]));
             baseItems.splice(7, 0, getItem('图片管理', '/picture', <PictureOutlined />));
             return baseItems;
         }
@@ -59,7 +62,7 @@ const LeftMenu = ({collapsed}) => {
         <div>
             <Menu
                 defaultSelectedKeys={['1']}
-                defaultOpenKeys={['sub1']}
+                defaultOpenKeys={['/article', '/friendLinkMenu']}
                 mode="inline"
                 theme={isDark ? 'dark' : 'light'}
                 style={{height:'100vh'}}
