@@ -4,7 +4,7 @@ import { Form, Input, Button, Card, message } from 'antd';
 // 虚拟列表配置：总数、单行高度、可视区高度、缓冲渲染行数
 const TOTAL = 1000;
 const ROW_HEIGHT = 76;
-const VIEWPORT_HEIGHT = 360;
+const VIEWPORT_HEIGHT = 300;
 const OVERSCAN = 6;
 
 const Message = () => {
