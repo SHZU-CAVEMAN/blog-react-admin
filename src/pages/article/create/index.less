@@ -12,11 +12,13 @@
 .article-md-editor .w-md-editor-content {
     font-size: 15px;
     line-height: 1.7;
+    overflow: hidden; //禁用外部滚动
 }
 
 .article-md-editor .w-md-editor-input,
 .article-md-editor .w-md-editor-preview {
     padding: 16px;
+    overflow: auto; // 保留内容区的滚动
 }
 
 body.theme-dark .article-md-editor {
