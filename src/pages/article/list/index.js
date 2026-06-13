@@ -69,16 +69,15 @@ const ArticleList = () => {
       //console.log("文章信息：", res);
       setDataSource(list);
     } catch (error) {
-      message.error(error?.msg || '获取文章列表失败，请稍后重试');
+      // 新返回格式失败信息统一在 message 字段
+      message.error(error?.message || error?.msg || '获取文章列表失败，请稍后重试');
       setDataSource([]);
     }
   };
 
   const uploadPicture = async (file, articleId) => {
     const res = await uploadSingleFile(file, articleId);
-    if (res?.status !== 0) {
-      throw new Error(res?.message || '上传失败');
-    }
+    // 新返回格式已在公共 request 层判定成功/失败，这里直接读取上传结果字段
     return normalizePictureUrl(res.content_key);
   };
   
@@ -164,6 +163,11 @@ const ArticleList = () => {
   // 跳转到正文编辑页面
   const handleEditContent = (record) => {
     const articleId = record.id || record.key;
+    // 防止偶发拿不到 id 时跳转到空编辑页
+    if (!articleId) {
+      message.warning('未获取到文章ID，无法进入编辑页');
+      return;
+    }
     navigate(`/article/create?mode=edit&id=${articleId}`);
   };
 

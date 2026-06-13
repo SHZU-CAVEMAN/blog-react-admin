@@ -51,11 +51,12 @@ const Login = () => {
         }
         try {
             setSending(true);
-            await sendEmailCode({ email });
-            message.success("验证码发送成功！");
+            const res = await sendEmailCode({ email });
+            // 新格式下成功提示文案来自 message
+            message.success(res?.message || "验证码发送成功！");
             setCountDown(60);
         } catch (err) {
-            message.error("发送失败");
+            message.error(err?.message || "发送失败");
         } finally {
             setSending(false);
         }
@@ -88,17 +89,20 @@ const Login = () => {
                     account: email,
                     password: code,
                 });
-                if (res.status === 100) {
-                    const userRole = resolveUserRole(res, email);
-                    localStorage.setItem("token", res.token);
-                    localStorage.setItem("userRole", userRole);
-                    message.success(res.msg);
-                    navigate("/home");
-                } else {
-                    message.error(res.msg);
+                // 新格式：token、role 在 data 里
+                const data = res?.data && typeof res.data === "object" ? res.data : {};
+                const token = data?.token;
+                if (!token) {
+                    throw new Error("登录成功但未返回 token");
                 }
+                const userRole = resolveUserRole(data, email);
+                localStorage.setItem("token", token);
+                localStorage.setItem("userRole", userRole);
+                message.success(res?.message || "登录成功");
+                navigate("/home");
             } catch (err) {
-                message.error("登录失败");
+                // 失败原因可能来自网络、后端校验或令牌处理，不固定是账号密码问题
+                message.error(err?.message || "登录失败");
             }
         } else {
             // 账号密码登录
@@ -112,17 +116,20 @@ const Login = () => {
                     account: username,
                     password: password,
                 });
-                if (res.status === 100) {
-                    const userRole = resolveUserRole(res, username);
-                    localStorage.setItem("token", res.token);
-                    localStorage.setItem("userRole", userRole);
-                    message.success(res.msg);
-                    navigate("/home");
-                } else {
-                    message.error(res.msg);
+                // 新格式：token、role 在 data 里
+                const data = res?.data && typeof res.data === "object" ? res.data : {};
+                const token = data?.token;
+                if (!token) {
+                    throw new Error("登录成功但未返回 token");
                 }
+                const userRole = resolveUserRole(data, username);
+                localStorage.setItem("token", token);
+                localStorage.setItem("userRole", userRole);
+                message.success(res?.message || "登录成功");
+                navigate("/home");
             } catch (err) {
-                message.error("账号或密码错误");
+                // 失败原因可能来自网络、后端校验或令牌处理，不固定是账号密码问题
+                message.error(err?.message || "登录失败");
             }
         }
     };

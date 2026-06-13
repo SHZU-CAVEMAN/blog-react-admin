@@ -76,9 +76,7 @@ const Picture = () => {
     try {
       setUploading(true);
       const res = await uploadSingleFile(selectedFile);
-      if (res?.status !== 0) {
-        throw new Error(res?.message || '上传失败');
-      }
+      // 新返回格式已在公共 request 层判定成功/失败，这里直接使用成功结果
       message.success(res?.message || '图片上传成功');
       setSelectedFile(null);
       await fetchPictures();

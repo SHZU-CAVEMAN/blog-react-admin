@@ -44,7 +44,8 @@ const ArticleCategory = () => {
           message.success('分类已更新');
           fetchList();
         } catch (error) {
-          message.error(error.msg || '更新失败，请重试');
+          // 新返回格式失败信息统一在 message 字段
+          message.error(error?.message || error?.msg || '更新失败，请重试');
           return;
         }
       } else {
@@ -54,7 +55,8 @@ const ArticleCategory = () => {
           message.success('分类已新增');
           fetchList();
         } catch (error) {
-          message.error(error.msg || '新增失败，请重试');
+          // 新返回格式失败信息统一在 message 字段
+          message.error(error?.message || error?.msg || '新增失败，请重试');
           return;
         }
       }
@@ -111,7 +113,8 @@ const ArticleCategory = () => {
         setSelectedRowKeys([]);
         fetchList();
       } catch (error) {
-        message.error(error.msg || '合并失败，请重试');
+        // 新返回格式失败信息统一在 message 字段
+        message.error(error?.message || error?.msg || '合并失败，请重试');
       }
     } catch (error) {
       // 表单验证失败，不需要处理

@@ -29,17 +29,16 @@ service.interceptors.request.use(config => {
 // 响应拦截器
 service.interceptors.response.use(
   res => {
-    console.log("响应拦截——响应结果：", res);
-    // 兼容后端使用 HTTP 200 + { status: 401 } 的业务错误返回
-    if (Number(res?.data?.status) === 401) {
-      redirectToLogin();
-      return Promise.reject(res.data);
+    // 后端统一格式：HTTP 200/201 且 code=0 代表成功
+    if ((res.status === 200 || res.status === 201) && Number(res?.data?.code) === 0) {
+      return res.data;
     }
-    return res.data;
+    // 其余情况都按业务失败抛出，交给页面层提示
+    return Promise.reject(res.data);
   },
   // axios 只会在 HTTP 非 2xx 时走 error 分支
-  // res.send 默认 HTTP 状态码是 200，所以后端业务错误（如 401）会被当成成功响应处理，需要在 then 里再判断一次 status
   error => {
+    // HTTP 401 统一视为登录失效，直接回登录页
     if (error.response && error.response.status === 401) {
       redirectToLogin();
     }
