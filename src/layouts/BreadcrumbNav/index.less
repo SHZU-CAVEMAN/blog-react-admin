@@ -1,0 +1,61 @@
+/* 面包屑容器，添加下边距 */
+.body-breadcrumb {
+    margin-bottom: 12px;
+}
+
+/* 面包屑单项容器，水平排列并支持间距 */
+.crumb-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+/* 面包屑文本标签基础样式 */
+.crumb-label {
+    color: inherit;
+}
+
+/* 面包屑文本悬浮效果：下划线 + 黑色 */
+.crumb-label:hover {
+    text-decoration: underline;
+    color: #000;
+}
+
+/* 当前活跃路由的面包屑样式：黑色 + 加粗 */
+.crumb-item.active .crumb-label {
+    color: #000;
+    font-weight: 600;
+}
+
+/* 关闭按钮（X图标）基础样式：小号 + 浅灰 */
+.crumb-close {
+    font-size: 10px;
+    color: #999;
+}
+
+/* 关闭按钮悬浮效果 */
+.crumb-close:hover {
+    color: #333;
+}
+
+/* ===== 暗黑模式样式 ===== */
+
+/* 暗黑模式下关闭按钮色 */
+body.theme-dark .crumb-close {
+    color: #c4c7cc;
+}
+
+/* 暗黑模式下关闭按钮悬浮效果 */
+body.theme-dark .crumb-close:hover {
+    color: #ffffff;
+}
+
+/* 暗黑模式下文本悬浮效果：白色 */
+body.theme-dark .crumb-label:hover {
+    color: #ffffff;
+}
+
+body.theme-dark .crumb-item.active .crumb-label {
+    color: #ffffff;
+}
