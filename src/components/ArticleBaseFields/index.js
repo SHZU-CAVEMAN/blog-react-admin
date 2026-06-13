@@ -239,7 +239,12 @@ const ArticleBaseFields = ({ categoryOptions = [], selectedPictureFile, onSelect
                         label="说明"
                         rules={[{ required: true, message: '请输入说明' }]}
                       >
-                        <Input placeholder="请输入说明" />
+                        <Input.TextArea
+                          placeholder="请输入说明"
+                          autoSize={{ minRows: 3, maxRows: 8 }}
+                          showCount
+                          maxLength={1000}
+                        />
                       </Form.Item>
                     </Col>
 
