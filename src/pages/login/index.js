@@ -92,7 +92,6 @@ const Login = () => {
                     const userRole = resolveUserRole(res, email);
                     localStorage.setItem("token", res.token);
                     localStorage.setItem("userRole", userRole);
-                    localStorage.setItem("tokenExpire", Date.now() + 2 * 60 * 60 * 1000);
                     message.success(res.msg);
                     navigate("/home");
                 } else {
@@ -117,7 +116,6 @@ const Login = () => {
                     const userRole = resolveUserRole(res, username);
                     localStorage.setItem("token", res.token);
                     localStorage.setItem("userRole", userRole);
-                    localStorage.setItem("tokenExpire", Date.now() + 2 * 60 * 60 * 1000);
                     message.success(res.msg);
                     navigate("/home");
                 } else {
