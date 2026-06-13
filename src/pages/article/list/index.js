@@ -1,5 +1,5 @@
 import { Space, Table, Button, Form, Popconfirm, message, Input, Select } from 'antd';
-import { useState,useEffect, useMemo } from 'react';
+import { useState,useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getArticleList,updateArticle,deleteArticle} from '@/api/article'
@@ -9,8 +9,9 @@ import ArticleBaseFields from '@/components/ArticleBaseFields';
 import './index.less';
 const { Column } = Table;
 
+const FILE_BASE_URL = 'http://127.0.0.1:81/uploadFiles/'; // 文件服务地址：上传接口返回 content_key，前端在这里拼成可访问图片 URL
+
 const ArticleList = () => {
-  const FILE_BASE_URL = 'http://127.0.0.1:81/uploadFiles/'; // 文件服务地址：上传接口返回 content_key，前端在这里拼成可访问图片 URL
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const [dataSource, setDataSource] = useState([]); // 文章列表
@@ -22,11 +23,7 @@ const ArticleList = () => {
   const [filterStatus, setFilterStatus] = useState('active'); // 状态筛选：首次进入默认只看 active
   const [selectedPictureFile, setSelectedPictureFile] = useState(null);
 
-  useEffect(() => {
-    fetchList();
-  }, []); //空数组表示 只在第一次加载时执行一次
-
-  const normalizePictureUrl = (value) => {
+  const normalizePictureUrl = useCallback((value) => {
     const raw = String(value || '').trim();
     if (!raw) {
       return '';
@@ -37,9 +34,9 @@ const ArticleList = () => {
     const cleaned = raw.replace(/^\/+/, '').replace(/^uploadFiles\//i, '');
     const hasExt = /\.[a-z0-9]+$/i.test(cleaned);
     return `${FILE_BASE_URL}${hasExt ? cleaned : `${cleaned}.jpg`}`;
-  };
+  }, []);
   
-  const fetchList = async () => {
+  const fetchList = useCallback(async () => {
     try {
       // 分类信息
       const category = await getCategoryList();
@@ -73,7 +70,11 @@ const ArticleList = () => {
       message.error(error?.message || error?.msg || '获取文章列表失败，请稍后重试');
       setDataSource([]);
     }
-  };
+  }, [normalizePictureUrl]);
+
+  useEffect(() => {
+    fetchList();
+  }, [fetchList]); // 初始化时拉取列表；依赖稳定的 fetchList，避免 Hook 依赖告警
 
   const uploadPicture = async (file, articleId) => {
     const res = await uploadSingleFile(file, articleId);
