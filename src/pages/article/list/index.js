@@ -19,7 +19,7 @@ const ArticleList = () => {
   const [keyword, setKeyword] = useState('');  // 标题搜索关键词
   const [filterCategoryId, setFilterCategoryId] = useState(undefined); // 分类筛选
   const [filterCategoryLabel, setFilterCategoryLabel] = useState(''); // 分类筛选标签
-  const [filterStatus, setFilterStatus] = useState(undefined); // 状态筛选
+  const [filterStatus, setFilterStatus] = useState('active'); // 状态筛选：首次进入默认只看 active
   const [selectedPictureFile, setSelectedPictureFile] = useState(null);
 
   useEffect(() => {
