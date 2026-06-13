@@ -18,10 +18,10 @@ function BodyContent(){
             // 检查该路由是否已在缓存中
             const exists = prev.some((item) => item.path === path);
             if (exists) {
-                // 已缓存的页面只更新 element 引用（保持原组件实例与内部状态不变）
-                return prev.map((item) => (item.path === path ? { ...item, element: outlet } : item));
+                // 命中缓存时直接复用旧组件实例，避免被新 outlet 覆盖导致重新挂载和重复请求
+                return prev;
             }
-            // 首次访问的页面加入缓存列表
+            // 首次访问的页面加入缓存列表（outlet是该路由对应的 React element（页面实例）
             return [...prev, { path, element: outlet }];
         });
     }, [location.pathname, outlet]);

@@ -21,8 +21,10 @@ const Link = () => {
   useEffect(() => {
     fetchCategoryList();
     fetchFriendlinkList();
-  }, []);
+  }, []);//  keep-alive 让组件不卸载，从而 [] 的 effect 不会重新跑，不会再请求。
 
+  // 请求友链分类
+  // 仅首次加载时请求，后续切回复用缓存，避免重复请求
   const fetchCategoryList = async () => {
     try {
       const res = await getFriendlinkCategoryList();
@@ -39,7 +41,8 @@ const Link = () => {
       setCategoryOptions([]);
     }
   };
-
+  // 请求友链数据
+  // 每次增删改后刷新列表，保持数据最新
   const fetchFriendlinkList = async () => {
     try {
       setListLoading(true);
@@ -61,7 +64,7 @@ const Link = () => {
       setListLoading(false);
     }
   };
-
+  // 判断是否为生成的变体图片（如缩略图、不同尺寸等），通过文件名规则判断是否存在原图
   const filteredData = useMemo(() => {
     const nextKeyword = keyword.trim().toLowerCase();
     return dataSource.filter((item) => {
@@ -72,6 +75,7 @@ const Link = () => {
     });
   }, [dataSource, filterCategory, keyword]);
 
+  // 规范化状态值，兼容接口返回的状态值不规范的情况
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -104,7 +108,7 @@ const Link = () => {
       setSubmitting(false);
     }
   };
-
+  // 编辑友链：将数据填入表单，切换到编辑模式
   const handleEdit = (record) => {
     form.setFieldsValue({
       name: record.name,
@@ -115,7 +119,7 @@ const Link = () => {
     });
     setEditingId(record.id);
   };
-
+  // 删除友链
   const handleDelete = async (record) => {
     try {
       await deleteFriendlink(record.id);
@@ -131,6 +135,7 @@ const Link = () => {
     }
   };
 
+  // 重置表单 
   const handleReset = () => {
     form.resetFields();
     form.setFieldValue('status', 'enabled');

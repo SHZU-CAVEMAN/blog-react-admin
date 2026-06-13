@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import dayjs from 'dayjs';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Button } from 'antd';
 import { message } from 'antd';
 import { getCategoryList } from '@/api/category';
@@ -19,6 +19,7 @@ const ArticleCreate = () => {
   const [submittingAction, setSubmittingAction] = useState('');
   const [form] = Form.useForm();
 
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode');
@@ -27,19 +28,30 @@ const ArticleCreate = () => {
   const isEditMode = mode === 'edit' && !!(currentArticleId || routeArticleId);
 
   useEffect(() => {
+    // keep-alive 下切走时组件不会卸载；仅在当前激活页是 /article/create 时才同步 id
+    if (location.pathname !== '/article/create') {
+      return;
+    }
     setCurrentArticleId(routeArticleId || '');
-  }, [routeArticleId]);
+  }, [routeArticleId, location.pathname]);
 
   useEffect(() => {
     const initPage = async () => {
       try {
-        // 1 请求分类数据并保存
-        const categoryRes = await getCategoryList();
-        const options = (categoryRes.data || []).map(item => ({
-          value: String(item.id),
-          label: item.name,
-        }));
-        setCategoryOptions(options);
+        // 路由切换会触发 effect；若当前不是编辑发布页则立即退出，避免隐藏状态误请求
+        if (location.pathname !== '/article/create') {
+          return;
+        }
+
+        // 1 分类数据仅首次加载，后续面包屑切回时复用缓存，避免重复请求
+        if (categoryOptions.length === 0) {
+          const categoryRes = await getCategoryList();
+          const options = (categoryRes.data || []).map(item => ({
+            value: String(item.id),
+            label: item.name,
+          }));
+          setCategoryOptions(options);
+        }
 
         if (!isEditMode) {
           return;
@@ -72,7 +84,7 @@ const ArticleCreate = () => {
     };
 
     initPage();
-  }, [currentArticleId, isEditMode, form]);
+  }, [currentArticleId, isEditMode, form, location.pathname, categoryOptions.length]);
 
   const buildPayload = (values, action) => {
     const finalPublishTime =
