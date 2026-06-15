@@ -202,6 +202,17 @@ const ArticleCreate = () => {
     }
   };
 
+  // 清空当前编辑发布页的所有输入与编辑上下文，回到新建态
+  const handleClearAll = () => {
+    form.resetFields();
+    setContent('');
+    setSelectedPictureFile(null);
+    setCurrentArticleId('');
+    setSubmittingAction('');
+    navigate('/article/create', { replace: true });
+    message.success('已清空当前内容，可新建文章');
+  };
+
   return (
     <div data-color-mode="light">
       <Form form={form} layout="vertical">
@@ -226,6 +237,12 @@ const ArticleCreate = () => {
             loading={submittingAction === 'save'}
           >
             保存
+          </Button>
+          <Button
+            style={{ marginRight: 8 }}
+            onClick={handleClearAll}
+          >
+            清空
           </Button>
           <Button
             onClick={() => handleSubmitByAction('publish')}
