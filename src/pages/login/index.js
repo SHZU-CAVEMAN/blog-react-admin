@@ -134,7 +134,7 @@ const Login = () => {
         }
     };
 
-    // 🔥 切换登录方式
+    //  切换登录方式
     const toggleLoginMode = () => {
         setIsCodeLogin(!isCodeLogin);
         setFormData({
@@ -147,12 +147,16 @@ const Login = () => {
     };
 
     return (
+        <div className="login-page-bg">
         <div style={{
                 maxWidth: "400px",
                 margin: "100px auto",
                 padding: "20px",
-                border: "1px solid #c6c6c6",
+                border: "1px solid rgba(255, 255, 255, 0.65)",
                 borderRadius: "8px",
+                background: "rgba(255, 255, 255, 0.1)",
+                backdropFilter: "blur(1px)",
+                boxShadow: "0 10px 28px rgba(0, 0, 0, 0.18)",
             }}
         >
             <div style={{
@@ -170,7 +174,7 @@ const Login = () => {
                     }}
                 />
             </div>
-            <h3 style={{ textAlign: "center" }}>博客后台管理 - 登录</h3>
+            <h3 style={{ textAlign: "center" }}>博客后台管理系统</h3>
 
             <div className="toggle-login-mode"
                  onClick={toggleLoginMode}>
@@ -205,11 +209,9 @@ const Login = () => {
                                 type="button"
                                 onClick={handleSendCode}
                                 disabled={sending || countDown > 0}
+                                className="login-btn login-btn-main"
                                 style={{
                                     padding: "8px 12px",
-                                    backgroundColor: sending || countDown > 0 ? "#ccc" : "#1677ff",
-                                    color: "#fff",
-                                    border: "none",
                                     borderRadius: 4,
                                     cursor: sending || countDown > 0 ? "not-allowed" : "pointer",
                                 }}
@@ -247,13 +249,10 @@ const Login = () => {
                 {/* 登录按钮 */}
                 <button
                     type="submit"
+                    className="login-btn login-btn-main"
                     style={{
                         width: "100%",
                         padding: "10px",
-                        backgroundColor: "#1677ff",
-                        //backgroundColor: "#1c8139",
-                        color: "#fff",
-                        border: "none",
                         borderRadius: "4px",
                         cursor: "pointer",
                     }}
@@ -261,6 +260,7 @@ const Login = () => {
                     登录
                 </button>
             </form>
+        </div>
         </div>
     );
 };
