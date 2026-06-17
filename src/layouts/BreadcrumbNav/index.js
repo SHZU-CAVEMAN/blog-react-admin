@@ -83,7 +83,7 @@ function BreadcrumbNav() {
     }, [crumbPaths, navigate, location.pathname, handleClose]);
 
     // 渲染 Ant Design Breadcrumb 组件，展示面包屑导航
-    return <Breadcrumb className="body-breadcrumb" items={items} />;
+    return <Breadcrumb className="body-breadcrumb" separator="" items={items} />;
 }
 
 export default BreadcrumbNav;
