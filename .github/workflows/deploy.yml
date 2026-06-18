@@ -1,0 +1,36 @@
+name: Deploy React Frontend
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 拉取代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 配置Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 安装依赖 + 打包（Create-React-App 默认打包输出 build 文件夹，和Vue的dist区分）
+      - name: Install & Build
+        run: |
+          npm install
+          npm run build
+
+      # 上传打包产物到服务器
+      - name: Upload build to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          port: ${{ secrets.SSH_PORT }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: build/ # React打包输出目录是 build，不是 dist
+          target: /www/wwwroot/blog-react/ # 改成你React站点宝塔目录
+          strip_components: 1 # 只上传build内部文件，不带build外层文件夹
+          # rm: true # 首次部署稳定后再打开，每次先清空服务器旧静态文件
