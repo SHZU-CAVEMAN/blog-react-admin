@@ -8,11 +8,10 @@ import { getCategoryList } from '@/api/category';
 import { addArticle, updateArticle, getArticleById, publishArticle } from '@/api/article';
 import { uploadSingleFile } from '@/api/upload';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
+import { FILE_BASE_URL } from '@/config/env';
 import './index.less';
 
 const ArticleCreate = () => {
-  // 文件服务地址：上传接口返回 content_key，前端在这里拼成可访问图片 URL
-  const FILE_BASE_URL = 'http://127.0.0.1:81/uploadFiles/';
   const [content, setContent] = useState('**Hello Markdown**');
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [selectedPictureFile, setSelectedPictureFile] = useState(null);

@@ -1,6 +1,5 @@
 import service from './request';
-
-const FILE_BASE_URL = 'http://127.0.0.1:81/uploadFiles/';
+import { FILE_BASE_URL } from '@/config/env';
 
 const normalizePictureUrl = (value) => {
   const raw = String(value || '').trim();

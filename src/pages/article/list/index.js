@@ -6,10 +6,9 @@ import { getArticleList,updateArticle,deleteArticle} from '@/api/article'
 import { getCategoryList} from '@/api/category'
 import { uploadSingleFile } from '@/api/upload';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
+import { FILE_BASE_URL } from '@/config/env';
 import './index.less';
 const { Column } = Table;
-
-const FILE_BASE_URL = 'http://127.0.0.1:81/uploadFiles/'; // 文件服务地址：上传接口返回 content_key，前端在这里拼成可访问图片 URL
 
 const ArticleList = () => {
   const [form] = Form.useForm();

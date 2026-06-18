@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { API_BASE_URL } from '@/config/env';
 
 
 // 创建实例
 const service = axios.create({
-  baseURL: 'http://127.0.0.1:81', // 统一前缀
+  baseURL: API_BASE_URL,
   timeout: 5000,
 });
 
