@@ -22,6 +22,7 @@ const ArticleList = () => {
   const [filterCategoryLabel, setFilterCategoryLabel] = useState(''); // 分类筛选标签
   const [filterStatus, setFilterStatus] = useState('active'); // 状态筛选：首次进入默认只看 active
   const [selectedPictureFile, setSelectedPictureFile] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const normalizePictureUrl = useCallback((value) => {
     const raw = String(value || '').trim();
@@ -38,6 +39,7 @@ const ArticleList = () => {
   
   const fetchList = useCallback(async () => {
     try {
+      setRefreshing(true);
       // 分类信息
       const category = await getCategoryList();
       const categoryItems = Array.isArray(category?.data) ? category.data : [];
@@ -69,6 +71,8 @@ const ArticleList = () => {
       // 新返回格式失败信息统一在 message 字段
       message.error(error?.message || error?.msg || '获取文章列表失败，请稍后重试');
       setDataSource([]);
+    } finally {
+      setRefreshing(false);
     }
   }, [normalizePictureUrl]);
 
@@ -311,6 +315,9 @@ const ArticleList = () => {
               <span className="status-pill status-active">active: {statusStats.active}</span>
               <span className="status-pill status-disabled">disabled: {statusStats.disabled}</span>
               <span className="status-pill status-draft">draft: {statusStats.draft}</span>
+              <Button onClick={fetchList} loading={refreshing}>
+                刷新
+              </Button>
               <Button 
                 type="primary" 
                 onClick={handleSubmit}
