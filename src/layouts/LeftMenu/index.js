@@ -41,7 +41,7 @@ const LeftMenu = ({collapsed}) => {
         if (userRole === 'admin') {
             baseItems.splice(2, 0, getItem('用户管理', '/permission', <ContainerOutlined />));
             baseItems.splice(3, 0, getItem('文章管理', '/article', <MailOutlined />, [
-                getItem('编辑发布', '/article/create'),
+                getItem('文章编辑', '/article/create'),
                 getItem('文章列表', '/article/list'),
                 getItem('分类管理', '/article/category'),
             ]));

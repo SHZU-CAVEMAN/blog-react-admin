@@ -16,6 +16,22 @@ min-height: 0;
 overflow-y: auto;
 overflow-x: hidden;
 }
+/* 滚动条整体：宽度与轨道色 */
+.body-content-page::-webkit-scrollbar {
+    width: 6px;
+    background-color: #e3e3e3;
+    border-radius: 3px;
+}
+
+/* 滑块颜色，hover/active 保持同色不加深 */
+.body-content-page::-webkit-scrollbar-thumb {
+    background-color: #969696;
+    border-radius: 3px;
+}
+.body-content-page::-webkit-scrollbar-thumb:hover,
+.body-content-page::-webkit-scrollbar-thumb:active {
+    background-color: #969696;
+}
 
 /* keep-alive 缓存页面基础样式：保留渲染但隐藏非激活页面 */
 .keep-alive-page {
