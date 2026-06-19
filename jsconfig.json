@@ -1,0 +1,13 @@
+// VS Code JavaScript 项目配置：用于让编辑器识别 @ 别名并提供跳转/引用能力
+{
+  "compilerOptions": {
+    // 以项目根目录作为路径解析基准
+    "baseUrl": ".",
+    "paths": {
+      // 将 @/xxx 映射到 src/xxx
+      "@/*": ["src/*"]
+    }
+  },
+  // 只索引 src 目录，减少无关文件干扰
+  "include": ["src"]
+}
