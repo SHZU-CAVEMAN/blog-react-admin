@@ -2,7 +2,7 @@ const trimSlash = (value) => String(value || '').replace(/\/+$/, '');
 
 const buildDefaultApiBaseUrl = () => {
   return process.env.NODE_ENV === 'production'
-    ? trimSlash(window.location.origin)
+    ? `${trimSlash(window.location.origin)}/api`
   : 'http://127.0.0.1:8081';
 };
 
