@@ -6,7 +6,7 @@ import "./index.less";
 import { useState } from 'react';
 
 function Layout() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true); // 初始状态为折叠
   const toggleCollapsed = () => {
         setCollapsed(!collapsed);
   };

@@ -3,6 +3,7 @@ import {
     MenuUnfoldOutlined,
     BulbOutlined,
     BulbFilled,
+    LoginOutlined
 }from '@ant-design/icons';
 import { Button } from 'antd';
 import { useThemeMode } from '@/config/themeContext';
@@ -30,13 +31,14 @@ function HeadBar({collapsed,onToggle}){
 
             <div className='head-bar-actions'>
                 <Button type="default" onClick={toggleTheme}>
-                    {isDark ? <BulbFilled /> : <BulbOutlined />} {isDark ? '日间模式' : '夜间模式'}
+                    {isDark ? <BulbFilled /> : <BulbOutlined />} 
+                    {/* {isDark ? '日间模式' : '夜间模式'} */}
                 </Button>
-                <div className='login-out'
+                <Button className='login-out'
                     onClick={handleLogout}
                 >
-                    退出登录
-                </div>
+                    <LoginOutlined />
+                </Button>
             </div>
         </div>
     )

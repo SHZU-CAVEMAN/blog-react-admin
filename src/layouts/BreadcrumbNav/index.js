@@ -10,7 +10,7 @@ const routeLabelMap = {
     '/guide': '引导页',
     '/permission': '用户管理',
     '/forbidden': '无权限',
-    '/article/create': '编辑发布',
+    '/article/create': '文章编辑',
     '/article/list': '文章列表',
     '/article/category': '文章分类',
     '/message': '消息推送',
