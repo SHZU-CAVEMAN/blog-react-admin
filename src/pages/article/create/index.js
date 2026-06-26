@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import dayjs from 'dayjs';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import {  useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Button ,Drawer} from 'antd';
 import { message } from 'antd';
 import { getCategoryList } from '@/api/category';
@@ -18,7 +18,6 @@ const ArticleCreate = () => {
   const [submittingAction, setSubmittingAction] = useState('');
   const [form] = Form.useForm();
 
-  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode');
@@ -86,7 +85,7 @@ const ArticleCreate = () => {
     };
 
     initPage();
-  }, [currentArticleId]);
+  }, [categoryOptions.length, currentArticleId, form, isEditMode]);
 
   // 构建提交接口的 payload
   const buildPayload = (values, action) => {

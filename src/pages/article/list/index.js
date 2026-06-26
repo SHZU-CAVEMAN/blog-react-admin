@@ -1,8 +1,8 @@
-import { Space, Table, Button, Form, Popconfirm, message, Input, Select, Drawer,Tooltip } from 'antd';
+import { Space, Table, Button, Form, message, Input, Select, Drawer,Tooltip } from 'antd';
 import { useState,useEffect, useMemo, useCallback } from 'react';
 import { useNavigate,useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { getArticleList,updateArticle,deleteArticle} from '@/api/article'
+import { getArticleList,updateArticle} from '@/api/article'
 import { getCategoryList} from '@/api/category'
 import { uploadSingleFile } from '@/api/upload';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
@@ -163,21 +163,21 @@ const ArticleList = () => {
   };
 
   //  删除
-  const handleDelete = async (record) => {
-    const articleId = record.id || record.key;
-    if (!articleId) {
-      message.error('删除失败：未获取到文章ID');
-      return;
-    }
-    await deleteArticle(articleId);
-    message.success('文章已删除');
-    // 本地乐观更新状态为 disabled（不发新请求）
-    setDataSource(prev =>
-      prev.map(item =>
-        item.key === articleId ? { ...item, status: 'disabled' } : item
-      )
-    );
-  };
+  // const handleDelete = async (record) => {
+  //   const articleId = record.id || record.key;
+  //   if (!articleId) {
+  //     message.error('删除失败：未获取到文章ID');
+  //     return;
+  //   }
+  //   await deleteArticle(articleId);
+  //   message.success('文章已删除');
+  //   // 本地乐观更新状态为 disabled（不发新请求）
+  //   setDataSource(prev =>
+  //     prev.map(item =>
+  //       item.key === articleId ? { ...item, status: 'disabled' } : item
+  //     )
+  //   );
+  // };
 
   // 跳转到正文编辑页面
   const handleEditContent = (record) => {
