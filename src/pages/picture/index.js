@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Col, Empty, Image, Input, Popconfirm, Row, Segmented, Space, Table, Typography, Upload, message } from 'antd';
+import { Button, Card, Col, Empty, Image, Input, Popconfirm, Row, Segmented, Space, Table, Typography, Upload, message ,Tooltip} from 'antd';
 import { DeleteOutlined, ReloadOutlined, UnorderedListOutlined, UploadOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { deletePictureFile, getPictureList, uploadSingleFile } from '@/api/upload';
 
@@ -15,6 +15,7 @@ const Picture = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [deletingName, setDeletingName] = useState('');
 
+  // 判断图片是否为生成的变体（如压缩图、WebP/AVIF 格式等），用于过滤显示
   const isGeneratedVariant = (name, allNamesSet) => {
     const normalized = String(name || '').trim();
     if (!normalized) {
@@ -34,7 +35,7 @@ const Picture = () => {
 
     return false;
   };
-
+  // 获取图片列表
   const fetchPictures = async () => {
     try {
       setLoading(true);
@@ -48,10 +49,12 @@ const Picture = () => {
     }
   };
 
+  // 页面加载时获取图片列表
   useEffect(() => {
     fetchPictures();
   }, []);
 
+  // 过滤图片列表，根据关键字和显示范围进行筛选
   const filteredPictures = useMemo(() => {
     const allNamesSet = new Set(pictureList.map((item) => String(item.name || '').trim()));
     const visibleList = showScope === 'all'
@@ -68,6 +71,7 @@ const Picture = () => {
     });
   }, [keyword, pictureList, showScope]);
 
+  // 上传图片
   const handleUpload = async () => {
     if (!selectedFile) {
       message.warning('请先选择图片');
@@ -87,6 +91,7 @@ const Picture = () => {
     }
   };
 
+  // 删除图片
   const handleDelete = async (record) => {
     try {
       setDeletingName(record.name);
@@ -99,7 +104,7 @@ const Picture = () => {
       setDeletingName('');
     }
   };
-
+  // 渲染图片网格
   const renderGrid = () => {
     if (!filteredPictures.length) {
       return <Empty description="暂无图片" />;
@@ -108,7 +113,7 @@ const Picture = () => {
     return (
       <Row gutter={[16, 16]}>
         {filteredPictures.map((item) => (
-          <Col xs={24} sm={12} md={8} xl={6} key={item.id}>
+          <Col xs={24} sm={12} md={8} xl={4} key={item.id}>
             <Card
               hoverable
               style={{ height: 420, display: 'flex', flexDirection: 'column' }}
@@ -136,9 +141,29 @@ const Picture = () => {
                 <Text strong>
                   {item.name}
                 </Text>
-                <Paragraph copyable={{ text: item.url }} style={{ marginBottom: 0 }}>
-                  {item.url}
+
+                <Paragraph
+                  copyable={{ text: item.url }}
+                  style={{
+                    marginBottom: 0,
+                    // 单行省略关键样式
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden', // 隐藏容器内部超出边界的内容，把溢出的文字裁掉，不出现横向滚动条。
+                    textOverflow: 'ellipsis', // 文字截断位置显示省略号 ...
+                    maxWidth: '100%', // 防止链接文本无限撑开卡片
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8 // 文字和复制图标间距
+                  }}
+                >
+                  <Tooltip placement="topLeft" title={item.url} style={{ overflow: 'hidden' }}>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.url}
+                    </span>
+                  </Tooltip>
                 </Paragraph>
+
+
               </Space>
             </Card>
           </Col>
@@ -146,7 +171,7 @@ const Picture = () => {
       </Row>
     );
   };
-
+  // 渲染图片列表
   const renderList = () => {
     return (
       <Table
