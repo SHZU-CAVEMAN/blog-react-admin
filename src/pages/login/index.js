@@ -99,7 +99,8 @@ const Login = () => {
                 localStorage.setItem("token", token);
                 localStorage.setItem("userRole", userRole);
                 message.success(res?.message || "登录成功");
-                navigate("/home");
+                //navigate("/home");
+                navigate('/article/list')
             } catch (err) {
                 // 失败原因可能来自网络、后端校验或令牌处理，不固定是账号密码问题
                 message.error(err?.message || "登录失败");
