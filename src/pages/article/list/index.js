@@ -1,6 +1,6 @@
-import { Space, Table, Button, Form, Popconfirm, message, Input, Select } from 'antd';
+import { Space, Table, Button, Form, Popconfirm, message, Input, Select, Drawer,Tooltip } from 'antd';
 import { useState,useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getArticleList,updateArticle,deleteArticle} from '@/api/article'
 import { getCategoryList} from '@/api/category'
@@ -13,6 +13,7 @@ const { Column } = Table;
 const ArticleList = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const location = useLocation();
   const [dataSource, setDataSource] = useState([]); // 文章列表
   const [editingKey, setEditingKey] = useState(null);  //  当前是否在编辑
   const [categoryData, setCategoryData] = useState([]); // 分类 options
@@ -22,6 +23,7 @@ const ArticleList = () => {
   const [filterStatus, setFilterStatus] = useState('active'); // 状态筛选：首次进入默认只看 active
   const [selectedPictureFile, setSelectedPictureFile] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [formDrawerOpen, setFormDrawerOpen] = useState(false);
 
   const normalizePictureUrl = useCallback((value) => {
     const raw = String(value || '').trim();
@@ -77,7 +79,18 @@ const ArticleList = () => {
 
   useEffect(() => {
     fetchList();
+    return ()=>{
+      // 组件卸载时清理状态
+      setFormDrawerOpen(false);
+    }
   }, [fetchList]); // 初始化时拉取列表；依赖稳定的 fetchList，避免 Hook 依赖告警
+
+  useEffect(() => {
+    // 组件卸载时清理状态
+    return () => {
+      setFormDrawerOpen(false);
+    };
+  }, [location.pathname]); // 确保在路由切换时清理状态
 
   const uploadPicture = async (file, articleId) => {
     const res = await uploadSingleFile(file, articleId);
@@ -127,6 +140,7 @@ const ArticleList = () => {
       form.resetFields();
       setEditingKey(null);
       setSelectedPictureFile(null);
+      setFormDrawerOpen(false);
     });
   };
 
@@ -145,6 +159,7 @@ const ArticleList = () => {
     });
     setSelectedPictureFile(null);
     setEditingKey(record.key);
+    setFormDrawerOpen(true);
   };
 
   //  删除
@@ -267,66 +282,88 @@ const ArticleList = () => {
 
   return (
     <div data-color-mode="light">
-      {/*  上方表单（一行两个） */}
-      <Form form={form} layout="vertical">
-        <ArticleBaseFields
-          categoryOptions={categoryData}
-          selectedPictureFile={selectedPictureFile}
-          onSelectedPictureFileChange={setSelectedPictureFile}
-        />
+      <div className="article-list-toolbar">
+        <Space wrap>
+          <Input
+            allowClear
+            placeholder="按文章名模糊查询"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            style={{ width: 220 }}
+          />
+          <Select
+            allowClear
+            placeholder="按分类过滤"
+            value={filterCategoryId}
+            onChange={(value, option) => {
+              setFilterCategoryId(value);
+              setFilterCategoryLabel(option?.label || '');
+            }}
+            options={categoryFilterOptions}
+            style={{ width: 160 }}
+          />
+          <Select
+            allowClear
+            placeholder="按状态过滤"
+            value={filterStatus}
+            onChange={setFilterStatus}
+            options={[
+              { value: 'active', label: 'active' },
+              { value: 'disabled', label: 'disabled' },
+              { value: 'draft', label: 'draft' },
+            ]}
+            style={{ width: 160 }}
+          />
+        </Space>
 
-        <Form.Item style={{ marginTop: 16, marginBottom: 16 }}>
-          <div className="article-list-toolbar">
-            <Space wrap>
-              <Input
-                allowClear
-                placeholder="按文章名模糊查询"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                style={{ width: 220 }}
-              />
-              <Select
-                allowClear
-                placeholder="按分类过滤"
-                value={filterCategoryId}
-                onChange={(value, option) => {
-                  setFilterCategoryId(value);
-                  setFilterCategoryLabel(option?.label || '');
-                }}
-                options={categoryFilterOptions}
-                style={{ width: 160 }}
-              />
-              <Select
-                allowClear
-                placeholder="按状态过滤"
-                value={filterStatus}
-                onChange={setFilterStatus}
-                options={[
-                  { value: 'active', label: 'active' },
-                  { value: 'disabled', label: 'disabled' },
-                  { value: 'draft', label: 'draft' },
-                ]}
-                style={{ width: 160 }}
-              />
-            </Space>
-
-            <Space wrap>
-              <span className="status-pill status-active">active: {statusStats.active}</span>
-              <span className="status-pill status-disabled">disabled: {statusStats.disabled}</span>
-              <span className="status-pill status-draft">draft: {statusStats.draft}</span>
-              <Button onClick={fetchList} loading={refreshing}>
-                刷新
-              </Button>
-              <Button 
-                type="primary" 
+        <Space>
+            <Button
+                type="primary"
                 onClick={handleSubmit}
               >
-                    更新
-              </Button>
-            </Space>
-          </div>
-        </Form.Item>
-      </Form>
+                更新
+            </Button>
+            <Button onClick={fetchList} loading={refreshing}>刷新</Button>
+       </Space>
+
+        <Space wrap>
+          <span className="status-pill status-active">active: {statusStats.active}</span>
+          <span className="status-pill status-disabled">disabled: {statusStats.disabled}</span>
+          <span className="status-pill status-draft">draft: {statusStats.draft}</span>
+
+        </Space>
+      </div>
+
+      <Drawer
+        title={editingKey ? `编辑文章 #${editingKey}` : '文章信息表'}
+        placement="right"
+        width="320"
+        mask={false}
+        open={formDrawerOpen}
+        onClose={() => setFormDrawerOpen(false)}
+        className="article-form-floating-drawer"
+        classNames={{
+          body: 'article-form-floating-drawer-body',
+        }}
+        styles={{
+          body: {
+            padding: 0,
+            overflowY: 'auto',
+            msOverflowStyle: 'none',
+            scrollbarWidth: 'none',
+          },
+        }}
+
+      >
+        <Form form={form} layout="vertical" size="small" className="article-edit-form-compact">
+          <ArticleBaseFields
+            categoryOptions={categoryData}
+            selectedPictureFile={selectedPictureFile}
+            onSelectedPictureFileChange={setSelectedPictureFile}
+            compact
+          />
+        </Form>
+      </Drawer>
       
       {/*  表格——文章列表 */}
       <Table 
@@ -339,16 +376,51 @@ const ArticleList = () => {
         onRow={(record) => ({
           onClick: () => handleEdit(record),
         })}
+         scroll={{ y: 350 }}
         pagination={{
-          pageSize: 8,          // 每页条数
-          showSizeChanger: false, // 不允许用户修改每页数量
-          showQuickJumper: true, // 可输入页码跳转
+          pageSize: 7,          // 每页条数
+          showSizeChanger: true, // 允许用户修改每页数量
+          pageSizeOptions: ['7', '10', '20', '100'],
+          //showQuickJumper: true, // 可输入页码跳转
+          position: ['bottomLeft'],
           showTotal: (total) => `共 ${total} 条`,
         }}
       >
-        <Column title="文章名" dataIndex="title" key="title" width={200} />
+        <Column
+          title="操作"
+          key="action"
+          width={100} 
+          render={(_, record) => (
+              <Button type="link" onClick={(e) => { e.stopPropagation();            handleEditContent(record); }}>
+                修改正文
+              </Button>
+          )}
+        />
+        <Column title="文章名" dataIndex="title" key="title" width={200} 
+          ellipsis={{
+            showTitle: false,
+          }}  
+          render={(title) => (
+              <Tooltip placement="topLeft" title={title}>
+                {title}
+              </Tooltip>
+            )}
+        />
         <Column title="分类名" dataIndex="categoryName" key="categoryName" width={80} />
-        <Column title="说明" dataIndex="summary" key="summary" />
+        <Column 
+          title="说明" 
+          dataIndex="summary" 
+          key="summary" 
+          width={300}
+          ellipsis={{
+            showTitle: false,
+          }}  
+          render={(summary) => (
+              <Tooltip placement="topLeft" title={summary}>
+                {summary}
+              </Tooltip>
+            )}
+        />
         <Column
           title="状态"
           dataIndex="status"
@@ -359,33 +431,7 @@ const ArticleList = () => {
           }}
         />
         <Column title="发表时间" dataIndex="publishTime" key="publishTime" />
-        <Column
-          title="操作"
-          key="action"
-          render={(_, record) => (
-            <Space>
-              {/* <Button type="link" onClick={(e) => { e.stopPropagation(); handleEdit(record); }}>
-                编辑
-              </Button> */}
 
-              <Button type="link" onClick={(e) => { e.stopPropagation(); handleEditContent(record); }}>
-                修改正文
-              </Button>
-
-              <Popconfirm
-                title="删除这之后文章状态为disabled"
-                onConfirm={() => handleDelete(record)}
-                okText="确定"
-                cancelText="取消"
-              >
-                  <Button type="link" danger onClick={(e) => e.stopPropagation()}>
-                    删除
-                  </Button>
-              </Popconfirm>
-           
-            </Space>
-          )}
-        />
       </Table>
     </div>
   );

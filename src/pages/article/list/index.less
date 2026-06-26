@@ -11,6 +11,46 @@
   flex-wrap: wrap;
 }
 
+// 浮动抽屉样式
+.article-form-floating-drawer {
+    box-shadow: 0 14px 48px rgba(17, 24, 39, 0.22);
+    border-radius: 12px;
+    overflow: hidden;
+}
+// 浮动抽屉内容区域样式，取消滚动条显示
+.article-form-floating-drawer-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.article-edit-form-compact {
+  .article-base-fields-card {
+    .ant-card-body {
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+  }
+
+  .ant-form-item {
+    margin-bottom: 10px;
+  }
+
+  .ant-form-item-label {
+    padding-bottom: 4px;
+  }
+
+  .ant-collapse-header {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .ant-collapse-content-box {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+}
+
 .article-list-row:hover > td {
   background-color: #f2f9ff !important;
 }
@@ -25,6 +65,23 @@ body.theme-dark .article-list-row:hover > td {
 
 body.theme-dark .article-list-row-active > td {
   background-color: #243140 !important;
+}
+
+body.theme-dark .article-form-floating-drawer {
+  .ant-drawer-content-wrapper {
+    box-shadow: 0 16px 56px rgba(0, 0, 0, 0.45);
+  }
+}
+
+@media (max-width: 992px) {
+  .article-form-floating-drawer {
+    .ant-drawer-content-wrapper {
+      top: 0;
+      right: 0;
+      height: 100% !important;
+      border-radius: 0;
+    }
+  }
 }
 
 // 文章状态标签样式 start

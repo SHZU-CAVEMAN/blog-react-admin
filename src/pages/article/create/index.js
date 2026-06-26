@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import dayjs from 'dayjs';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Form, Button } from 'antd';
+import { Form, Button ,Drawer} from 'antd';
 import { message } from 'antd';
 import { getCategoryList } from '@/api/category';
 import { addArticle, updateArticle, getArticleById, publishArticle } from '@/api/article';
@@ -25,23 +25,24 @@ const ArticleCreate = () => {
   const routeArticleId = searchParams.get('id');
   const [currentArticleId, setCurrentArticleId] = useState(routeArticleId || '');
   const isEditMode = mode === 'edit' && !!(currentArticleId || routeArticleId);
+  const [formDrawerOpen, setFormDrawerOpen] = useState(false); // 抽屉的显示状态
 
+  // 同步路由参数中的文章 ID
   useEffect(() => {
     // keep-alive 下切走时组件不会卸载；仅在当前激活页是 /article/create 时才同步 id
-    if (location.pathname !== '/article/create') {
-      return;
-    }
-    setCurrentArticleId(routeArticleId || '');
-  }, [routeArticleId, location.pathname]);
+    setCurrentArticleId(routeArticleId);
+    setFormDrawerOpen(true); // 打开抽屉显示文章信息表单
+    return () => {
+      // 组件销毁/切换走时执行
+      // 关闭弹窗、清空定时器、取消请求、保存数据、重置状态等
+      setFormDrawerOpen(false);
+    };
+  }, [routeArticleId]);
 
+  // 文章编辑发布页的初始化逻辑
   useEffect(() => {
     const initPage = async () => {
       try {
-        // 路由切换会触发 effect；若当前不是编辑发布页则立即退出，避免隐藏状态误请求
-        if (location.pathname !== '/article/create') {
-          return;
-        }
-
         // 1 分类数据仅首次加载，后续面包屑切回时复用缓存，避免重复请求
         if (categoryOptions.length === 0) {
           const categoryRes = await getCategoryList();
@@ -61,7 +62,7 @@ const ArticleCreate = () => {
           message.error('未找到要编辑的文章');
           return;
         }
-
+        // 初始化表单字段值
         form.setFieldsValue({
           title: currenArticle.title || currenArticle.name || '',
           picture: normalizePictureUrl(currenArticle.picture || currenArticle.cover || ''),
@@ -77,14 +78,17 @@ const ArticleCreate = () => {
         // 3 初始化 content 和 selectedPictureFile 的状态
         setSelectedPictureFile(null);
         setContent(currenArticle.content || '');
+        // 4 打开抽屉显示文章信息表单
+        setFormDrawerOpen(true)
       } catch (error) {
         message.error(error?.message || error?.msg || '初始化页面失败');
       }
     };
 
     initPage();
-  }, [currentArticleId, isEditMode, form, location.pathname, categoryOptions.length]);
+  }, [currentArticleId]);
 
+  // 构建提交接口的 payload
   const buildPayload = (values, action) => {
     const finalPublishTime =
       action === 'publish'
@@ -99,7 +103,7 @@ const ArticleCreate = () => {
       content,
     };
   };
-
+  // 处理图片 URL，若是相对路径则拼接 FILE_BASE_URL
   const normalizePictureUrl = (value) => {
     const raw = String(value || '').trim();
     if (!raw) {
@@ -113,7 +117,7 @@ const ArticleCreate = () => {
     return `${FILE_BASE_URL}${hasExt ? cleaned : `${cleaned}.jpg`}`;
   };
 
-  // 上传图片
+  // 上传文章封面图片
   const uploadPicture = async (file, articleId) => {
     const res = await uploadSingleFile(file, articleId);
     if (res?.status !== 0) {
@@ -215,20 +219,52 @@ const ArticleCreate = () => {
   return (
     <div data-color-mode="light">
       <Form form={form} layout="vertical">
-        <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
+        {/* <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
           <ArticleBaseFields
             categoryOptions={categoryOptions}
             selectedPictureFile={selectedPictureFile}
             onSelectedPictureFileChange={setSelectedPictureFile}
           />
-        </div>
-        <Form.Item style={{ marginTop: 16, marginBottom: 16, textAlign: 'right' }}>
+        </div> */}
+
+        {/*  */}
+              <Drawer
+                title={routeArticleId ? `编辑文章 #${routeArticleId}` : '文章信息表'}
+                placement="right"
+                width="320"
+                mask={false}
+                open={formDrawerOpen}
+                onClose={() => setFormDrawerOpen(false)}
+                className="article-form-floating-drawer"
+                classNames={{
+                  body: 'article-form-floating-drawer-body',
+                }}
+                styles={{
+                  body: {
+                    padding: 0,
+                    overflowY: 'auto',
+                    msOverflowStyle: 'none',
+                    scrollbarWidth: 'none',
+                  },
+                }}
+        
+              >
+                <Form form={form} layout="vertical" size="small" className="article-edit-form-compact">
+                  <ArticleBaseFields
+                    categoryOptions={categoryOptions}
+                    selectedPictureFile={selectedPictureFile}
+                    onSelectedPictureFileChange={setSelectedPictureFile}
+                    compact
+                  />
+                </Form>
+              </Drawer>
+        <Form.Item style={{ marginTop: 0, marginBottom: 5, textAlign: 'left' }}>
           <Button
             style={{ marginRight: 8 }}
             onClick={handleCreateNew}
             loading={submittingAction === 'create'}
           >
-            新建
+            新建文章
           </Button>
           <Button
             style={{ marginRight: 8 }}
@@ -241,9 +277,14 @@ const ArticleCreate = () => {
             style={{ marginRight: 8 }}
             onClick={handleClearAll}
           >
-            清空
+            清空信息
           </Button>
-
+          <Button
+            style={{ marginRight: 8 }}
+            onClick={() => setFormDrawerOpen(!formDrawerOpen)}
+          >
+            文章信息
+          </Button>
           {/* <Button
             onClick={() => handleSubmitByAction('publish')}
             loading={submittingAction === 'publish'}
@@ -256,7 +297,7 @@ const ArticleCreate = () => {
             className="article-md-editor"
             value={content}
             onChange={setContent}
-            height={600}
+            height={400}
           />
         </Form.Item>
       </Form>
