@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import dayjs from 'dayjs';
-import {  useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Button ,Drawer} from 'antd';
 import { message } from 'antd';
 import { getCategoryList } from '@/api/category';
@@ -17,46 +17,72 @@ const ArticleCreate = () => {
   const [selectedPictureFile, setSelectedPictureFile] = useState(null);
   const [submittingAction, setSubmittingAction] = useState('');
   const [form] = Form.useForm();
+  // 记录最近一次已成功加载详情的文章 id。
+  // 目的：面包屑切走再切回同一篇文章时，跳过重复详情请求。
+  const lastLoadedArticleIdRef = useRef('');
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode');
+  // 路由参数里的文章 id（来源：/article/create?mode=edit&id=xxx）
   const routeArticleId = searchParams.get('id');
-  const [currentArticleId, setCurrentArticleId] = useState(routeArticleId || '');
-  const isEditMode = mode === 'edit' && !!(currentArticleId || routeArticleId);
+  const isEditMode = mode === 'edit' && !!routeArticleId;
   const [formDrawerOpen, setFormDrawerOpen] = useState(false); // 抽屉的显示状态
 
-  // 同步路由参数中的文章 ID
+  // 组件销毁时统一清理抽屉状态
   useEffect(() => {
-    // keep-alive 下切走时组件不会卸载；仅在当前激活页是 /article/create 时才同步 id
-    setCurrentArticleId(routeArticleId);
-    setFormDrawerOpen(true); // 打开抽屉显示文章信息表单
     return () => {
-      // 组件销毁/切换走时执行
-      // 关闭弹窗、清空定时器、取消请求、保存数据、重置状态等
       setFormDrawerOpen(false);
     };
   }, [routeArticleId]);
 
-  // 文章编辑发布页的初始化逻辑
+  // 分类数据仅首次加载，避免重复请求
   useEffect(() => {
-    const initPage = async () => {
+    let cancelled = false; // 用于标记请求是否被取消
+    const loadCategoryOptions = async () => {
       try {
-        // 1 分类数据仅首次加载，后续面包屑切回时复用缓存，避免重复请求
-        if (categoryOptions.length === 0) {
-          const categoryRes = await getCategoryList();
-          const options = (categoryRes.data || []).map(item => ({
-            value: String(item.id),
-            label: item.name,
-          }));
-          setCategoryOptions(options);
-        }
-
-        if (!isEditMode) {
+        const categoryRes = await getCategoryList();
+        if (cancelled) {
           return;
         }
-        // 2 根据文章id获取文章详情并初始化表单
-        const { data: currenArticle } = await getArticleById(currentArticleId);
+        const options = (categoryRes.data || []).map(item => ({
+          value: String(item.id),
+          label: item.name,
+        }));
+        setCategoryOptions(options);
+      } catch (error) {
+        if (!cancelled) {
+          message.error(error?.message || error?.msg || '加载分类失败');
+        }
+      }
+    };
+    loadCategoryOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 编辑态下根据文章 id 加载详情并初始化表单
+  useEffect(() => {
+    if (!isEditMode || !routeArticleId) {
+      return;
+    }
+
+    const articleId = String(routeArticleId);
+    // 同一篇文章已加载过时不重复请求，直接复用当前页面状态。
+    if (lastLoadedArticleIdRef.current === articleId) {
+      setFormDrawerOpen(true);
+      return;
+    }
+
+    let cancelled = false;
+    const initEditArticle = async () => {
+      try {
+        const { data: currenArticle } = await getArticleById(articleId);
+        if (cancelled) {
+          return;
+        }
         if (!currenArticle) {
           message.error('未找到要编辑的文章');
           return;
@@ -78,14 +104,22 @@ const ArticleCreate = () => {
         setSelectedPictureFile(null);
         setContent(currenArticle.content || '');
         // 4 打开抽屉显示文章信息表单
-        setFormDrawerOpen(true)
+        setFormDrawerOpen(true);
+        // 5 记录已成功加载的文章 id，避免重复请求
+        lastLoadedArticleIdRef.current = articleId;
       } catch (error) {
-        message.error(error?.message || error?.msg || '初始化页面失败');
+        if (!cancelled) {
+          message.error(error?.message || error?.msg || '初始化页面失败');
+        }
       }
     };
 
-    initPage();
-  }, [categoryOptions.length, currentArticleId, form, isEditMode]);
+    initEditArticle();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routeArticleId, form, isEditMode]);
 
   // 构建提交接口的 payload
   const buildPayload = (values, action) => {
@@ -141,7 +175,6 @@ const ArticleCreate = () => {
       const createdId = response?.id;
       if (createdId) {
         const nextId = String(createdId);
-        setCurrentArticleId(nextId);
         navigate(`/article/create?mode=edit&id=${nextId}`, { replace: true });
 
         if (selectedPictureFile) {
@@ -169,7 +202,7 @@ const ArticleCreate = () => {
       setSubmittingAction(action);
       const values = await form.validateFields();
       const payload = buildPayload(values, action);
-      if (!currentArticleId) {
+      if (!routeArticleId) {
         message.warning('请先点击新建生成文章，再进行保存或发布');
         return;
       }
@@ -177,18 +210,18 @@ const ArticleCreate = () => {
       if (action === 'save') {
         await updateArticle({
           ...payload,
-          id: Number(currentArticleId),
+          id: Number(routeArticleId),
         });
       }
       if (action === 'publish') {
         await publishArticle({
           ...payload,
-          id: Number(currentArticleId),
+          id: Number(routeArticleId),
         });
       }
 
       if (selectedPictureFile) {
-        const pictureUrl = await uploadPicture(selectedPictureFile, currentArticleId);
+        const pictureUrl = await uploadPicture(selectedPictureFile, routeArticleId);
         form.setFieldValue('picture', pictureUrl);
       }
 
@@ -209,7 +242,7 @@ const ArticleCreate = () => {
     form.resetFields();
     setContent('');
     setSelectedPictureFile(null);
-    setCurrentArticleId('');
+    lastLoadedArticleIdRef.current = '';
     setSubmittingAction('');
     navigate('/article/create', { replace: true });
     message.success('已清空当前内容，可新建文章');
