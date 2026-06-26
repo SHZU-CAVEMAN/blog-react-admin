@@ -169,9 +169,6 @@ const ArticleCreate = () => {
       const payload = buildPayload(values, 'create');
 
       const response = await addArticle(payload);
-      if (response?.status !== 0) {
-        throw new Error(response?.message || '新建失败，请重试');
-      }
       const createdId = response?.id;
       if (createdId) {
         const nextId = String(createdId);
