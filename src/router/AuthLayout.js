@@ -5,6 +5,11 @@ import { getRequiredRoles } from "./routeAccess";
 const AuthLayout = () => {
   const location = useLocation();
 
+  // 访问站点根路径时，统一引导到登录页
+  if (location.pathname === "/") {
+    return <Navigate to="/login" replace />;
+  }
+
   const token = localStorage.getItem("token");
   const userRole = localStorage.getItem("userRole") || "user";
   // 只依赖后端 token 校验：前端这里只判断是否存在 token。
