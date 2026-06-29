@@ -10,7 +10,7 @@ import ArticleBaseFields from '@/components/ArticleBaseFields';
 import { FILE_BASE_URL } from '@/config/env';
 import './index.less';
 
-const SNAPSHOT_INTERVAL_MS = 30000; // 快照间隔：30s
+const SNAPSHOT_INTERVAL_MS = 5000; // 快照间隔：5s
 const SNAPSHOT_PREFIX = 'article:create:snapshot:'; // 快照存储的 localStorage key 前缀
 const SNAPSHOT_FORM_KEYS = ['title', 'picture', 'categoryId', 'publishTime', 'summary', 'status']; // 需要保存快照的表单字段名
 
