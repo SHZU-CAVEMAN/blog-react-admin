@@ -10,6 +10,7 @@ import {
 } from '@/api/notification';
 import {
   getNotificationTargetPath,
+  normalizeNotificationItem,
   normalizeNotificationList,
   normalizeNotificationUnreadCount,
   NOTIFICATION_TYPE_COLOR_MAP,
@@ -37,14 +38,7 @@ const HeadNotificationCenter = () => {
         getNotificationList({ page: 1, pageSize: 10 }),
       ]);
       setUnreadCount(normalizeNotificationUnreadCount(countRes));
-      setNotificationList(
-        normalizeNotificationList(listRes).map((item) => ({
-          ...item,
-          status: item.status || 'unread',
-          title: item.title || '系统通知',
-          content: item.content || '',
-        }))
-      );
+      setNotificationList(normalizeNotificationList(listRes).map(normalizeNotificationItem));
     } catch (error) {
       message.error(error?.message || error?.msg || '获取消息失败');
     } finally {

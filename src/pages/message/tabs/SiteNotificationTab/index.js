@@ -8,6 +8,7 @@ import {
   readNotification,
 } from '@/api/notification';
 import {
+  normalizeNotificationItem,
   normalizeNotificationList,
   normalizeNotificationUnreadCount,
   NOTIFICATION_TYPE_COLOR_MAP,
@@ -42,14 +43,7 @@ const SiteNotificationTab = () => {
       ]);
       const apiList = normalizeNotificationList(listRes);
       const apiUnreadCount = normalizeNotificationUnreadCount(unreadRes);
-      setList(
-        apiList.map((item) => ({
-          ...item,
-          status: item.status || 'unread',
-          title: item.title || '系统通知',
-          content: item.content || '',
-        }))
-      );
+      setList(apiList.map(normalizeNotificationItem));
       // 当后端返回列表为空时，未读数仍由后端 authoritative 数据决定
       if (!apiList.length && apiUnreadCount > 0) {
         message.warning('检测到未读数大于 0，但列表为空，请检查分页或接口过滤条件');

@@ -29,6 +29,22 @@ export const normalizeNotificationUnreadCount = (res) => {
   return Number.isFinite(count) ? count : 0;
 };
 
+// 将后端不同字段名统一
+export const normalizeNotificationItem = (item) => {
+  const readStatusRaw = item?.status ?? item?.read_status ?? item?.readStatus; // 后端可能返回 status/read_status/readStatus 等不同字段名
+  const readStatus = String(readStatusRaw || 'unread').toLowerCase(); // 统一成小写，避免后端返回 Read/Unread 等不同大小写
+
+  return {
+    ...item,
+    // 前端统一使用 status 字段判断已读/未读
+    status: readStatus === 'read' ? 'read' : 'unread',
+    title: item?.title || '系统通知',
+    content: item?.content || '',
+    // 时间字段也做兼容，避免列表显示时间为空
+    createdAt: item?.createdAt || item?.createTime || item?.created_at,
+  };
+};
+
 // 根据消息类型跳转到对应处理页
 export const getNotificationTargetPath = (item) => {
   if (item?.sourceType === 'friendlink' || item?.type === 'friendlink_apply') {
