@@ -1,12 +1,18 @@
 import { Tabs } from 'antd';
 import PushChannelConfigTab from './tabs/PushChannelConfigTab';
 import PushMessageTab from './tabs/PushMessageTab';
+import SiteNotificationTab from './tabs/SiteNotificationTab';
 
 const Message = () => {
   return (
     <Tabs
-      defaultActiveKey="push-content"
+      defaultActiveKey="site-notification"
       items={[
+        {
+          key: 'site-notification',
+          label: '站内通知',
+          children: <SiteNotificationTab />,
+        },
         {
           key: 'push-content',
           label: '推送内容',

@@ -1,0 +1,53 @@
+.site-notification-tab {
+  .mock-tip {
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  .notification-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .notification-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+
+    &.is-unread {
+      border-color: #91caff;
+      background: #f0f7ff;
+    }
+  }
+
+  .item-main {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .item-content {
+    margin: 8px 0;
+  }
+
+  .item-actions {
+    display: flex;
+    align-items: center;
+  }
+}
+
+body.theme-dark .site-notification-tab {
+  .notification-item {
+    border-color: #3f434a;
+    background: #2d3036;
+
+    &.is-unread {
+      border-color: #3b82f6;
+      background: #253246;
+    }
+  }
+}
