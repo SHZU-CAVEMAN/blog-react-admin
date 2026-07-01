@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Form, Input, Popconfirm, Select, Space, Table, Tag, message } from 'antd';
+import { Button, Col, Form, Input, Popconfirm, Row, Select, Space, Table, Tag, message } from 'antd';
 import {
   createFriendlink,
   deleteFriendlink,
@@ -148,64 +148,84 @@ const Link = () => {
 
   return (
     <div>
-      <Form form={form} layout="vertical">
-        <Space align="start" style={{ display: 'flex', marginBottom: 16 }} size={16} wrap>
-          <Form.Item
-            name="name"
-            label="友链名称"
-            rules={[{ required: true, message: '请输入友链名称' }]}
-            style={{ minWidth: 220 }}
-          >
-            <Input placeholder="请输入友链名称" />
-          </Form.Item>
-          <Form.Item
-            name="friendlinkCategoryId"
-            label="分类"
-            rules={[{ required: true, message: '请选择分类' }]}
-            style={{ minWidth: 180 }}
-          >
-            <Select
-              options={categoryOptions}
-              placeholder="请选择分类"
-            />
-          </Form.Item>
-          <Form.Item
-            name="url"
-            label="友链地址"
-            rules={[
-              { required: true, message: '请输入友链地址' },
-              { type: 'url', message: '请输入正确的 URL 地址' },
-            ]}
-            style={{ minWidth: 320 }}
-          >
-            <Input placeholder="https://example.com" />
-          </Form.Item>
-          <Form.Item
-            name="status"
-            label="状态"
-            initialValue="enabled"
-            rules={[{ required: true, message: '请选择状态' }]}
-            style={{ minWidth: 160 }}
-          >
-            <Select
-              options={[
-                { label: 'enabled', value: 'enabled' },
-                { label: 'disabled', value: 'disabled' },
+      <Form form={form} layout="vertical" style={{ marginBottom: 12 }}>
+        <Row gutter={[16, 12]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item
+              name="name"
+              label="友链名称"
+              rules={[{ required: true, message: '请输入友链名称' }]}
+              style={{ marginBottom: 0 }}
+            >
+              <Input placeholder="请输入友链名称" style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={12} lg={5}>
+            <Form.Item
+              name="friendlinkCategoryId"
+              label="分类"
+              rules={[{ required: true, message: '请选择分类' }]}
+              style={{ marginBottom: 0 }}
+            >
+              <Select
+                options={categoryOptions}
+                placeholder="请选择分类"
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={24} lg={9}>
+            <Form.Item
+              name="url"
+              label="友链地址"
+              rules={[
+                { required: true, message: '请输入友链地址' },
+                { type: 'url', message: '请输入正确的 URL 地址' },
               ]}
-              placeholder="请选择状态"
-            />
-          </Form.Item>
-        </Space>
+              style={{ marginBottom: 0 }}
+            >
+              <Input placeholder="https://example.com" style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
 
-        <Form.Item
-          name="description"
-          label="说明"
-          rules={[{ required: true, message: '请输入说明' }]}
-        >
-          <Input.TextArea placeholder="请输入友链说明" rows={3} />
-        </Form.Item>
+          <Col xs={24} sm={12} lg={4}>
+            <Form.Item
+              name="status"
+              label="状态"
+              initialValue="enabled"
+              rules={[{ required: true, message: '请选择状态' }]}
+              style={{ marginBottom: 0 }}
+            >
+              <Select
+                options={[
+                  { label: 'enabled', value: 'enabled' },
+                  { label: 'disabled', value: 'disabled' },
+                ]}
+                placeholder="请选择状态"
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
 
-        <Space style={{ marginBottom: 16 }} wrap>
+          <Col span={24}>
+            <Form.Item
+              name="description"
+              label="说明"
+              rules={[{ required: true, message: '请输入说明' }]}
+              style={{ marginBottom: 0 }}
+            >
+              <Input.TextArea
+                placeholder="请输入友链说明"
+                rows={2}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Space style={{ marginTop: 12, marginBottom: 6 }} wrap>
           <Button type="primary" onClick={handleSubmit}>
             {submitting ? '提交中...' : (editingId ? '更新' : '新增')}
           </Button>
