@@ -1,0 +1,57 @@
+.notification-center-panel {
+  width: 360px;
+}
+
+.notification-center-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.notification-center-list {
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notification-center-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+  gap: 8px;
+
+  &.is-unread {
+    border-color: #91caff;
+    background: #f0f7ff;
+  }
+
+  .item-body {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+
+  .item-content {
+    margin: 6px 0 0;
+  }
+}
+
+.notification-center-empty {
+  padding: 8px 0;
+}
+
+body.theme-dark .notification-center-item {
+  border-color: #3f434a;
+  background: #2d3036;
+
+  &.is-unread {
+    border-color: #3b82f6;
+    background: #253246;
+  }
+}
