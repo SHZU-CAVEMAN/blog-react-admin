@@ -3,7 +3,15 @@
 
   .filter-row {
     display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
     margin-bottom: 8px;
+
+    .ant-form-item {
+      margin-bottom: 0;
+      flex: 0 0 auto;
+    }
   }
 
   .batch-row {

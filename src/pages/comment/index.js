@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Form,
@@ -13,6 +13,7 @@ import {
   message,
 } from 'antd';
 import dayjs from 'dayjs';
+import { getAllCommentList } from '@/api/comment';
 import './index.less';
 
 const { Text, Paragraph } = Typography;
@@ -33,60 +34,73 @@ const STATUS_COLOR_MAP = {
   deleted: 'default',
 };
 
-const MOCK_COMMENTS = [
-  {
-    id: 1,
-    articleTitle: 'React 管理后台工程化实践',
-    nickname: '前端小周',
-    email: 'zhou@example.com',
-    content: '文章很实用，尤其是目录组织部分。',
-    status: 'pending',
-    ip: '192.168.1.20',
-    reply: '',
-    createdAt: '2026-06-14 10:21:00',
-  },
-  {
-    id: 2,
-    articleTitle: 'Node.js 日志系统设计',
-    nickname: 'Leo',
-    email: 'leo@example.com',
-    content: '建议补充一下日志切割策略。',
-    status: 'approved',
-    ip: '192.168.1.36',
-    reply: '已收到，后续会补充。',
-    createdAt: '2026-06-13 18:00:12',
-  },
-  {
-    id: 3,
-    articleTitle: '博客系统权限模型',
-    nickname: '匿名用户',
-    email: 'anonymous@demo.com',
-    content: '这个方案太复杂了吧？？？',
-    status: 'rejected',
-    ip: '10.10.8.21',
-    reply: '',
-    createdAt: '2026-06-12 09:10:48',
-  },
-  {
-    id: 4,
-    articleTitle: 'React 管理后台工程化实践',
-    nickname: '广告号',
-    email: 'spam@spam.com',
-    content: '点击链接领取大奖 http://spam.demo',
-    status: 'spam',
-    ip: '172.16.2.9',
-    reply: '',
-    createdAt: '2026-06-11 15:32:00',
-  },
-];
-
 const Comment = () => {
   const [filterForm] = Form.useForm();
-  const [dataSource, setDataSource] = useState(MOCK_COMMENTS);
+  const [dataSource, setDataSource] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState(undefined);
   const [articleFilter, setArticleFilter] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
+  const normalizeStatus = useCallback((status) => {
+    const normalized = String(status || '').trim().toLowerCase();
+    if (!normalized) {
+      return 'pending';
+    }
+    if (['enable', 'enabled', 'approved', 'pass', 'passed'].includes(normalized)) {
+      return 'approved';
+    }
+    if (['disable', 'disabled', 'deleted', 'delete', 'removed'].includes(normalized)) {
+      return 'deleted';
+    }
+    if (['reject', 'rejected', 'refused'].includes(normalized)) {
+      return 'rejected';
+    }
+    if (['spam', 'garbage', 'junk'].includes(normalized)) {
+      return 'spam';
+    }
+    if (['pending', 'wait', 'waiting', 'review'].includes(normalized)) {
+      return 'pending';
+    }
+    return normalized;
+  }, []);
+
+  const fetchComments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await getAllCommentList();
+      const items = Array.isArray(res?.data) ? res.data : [];
+      const normalized = items
+        .map((item) => ({
+          id: item.id,
+          articleTitle: item.articleTitle || item.article_title || item.title || '-',
+          nickname: item.nickname || item.name || '匿名用户',
+          email: item.email || '-',
+          content: item.content || item.comment_content || '',
+          status: normalizeStatus(item.status),
+          createdAt:
+            item.createdAt ||
+            item.comment_time ||
+            item.commentTime ||
+            item.create_time ||
+            item.created_at ||
+            '',
+        }))
+        .filter((item) => item.id !== undefined && item.id !== null)
+        .sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf());
+      setDataSource(normalized);
+    } catch (error) {
+      message.error(error?.message || error?.msg || '获取评论列表失败，请稍后重试');
+      setDataSource([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [normalizeStatus]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
 
   const filteredData = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -226,9 +240,9 @@ const Comment = () => {
 
   return (
     <div className="comment-page">
-      <Form form={filterForm} layout="vertical">
-        <Space align="start" size={16} wrap className="filter-row">
-          <Form.Item label="关键词" name="keyword" style={{ minWidth: 220 }}>
+      <Form form={filterForm} layout="inline">
+        <Space align="center" size={16} className="filter-row">
+          <Form.Item name="keyword" style={{ minWidth: 220 }}>
             <Input
               allowClear
               placeholder="评论内容 / 评论人 / 邮箱"
@@ -236,7 +250,7 @@ const Comment = () => {
             />
           </Form.Item>
 
-          <Form.Item label="文章标题" name="articleTitle" style={{ minWidth: 220 }}>
+          <Form.Item name="articleTitle" style={{ minWidth: 220 }}>
             <Input
               allowClear
               placeholder="按文章标题筛选"
@@ -244,7 +258,7 @@ const Comment = () => {
             />
           </Form.Item>
 
-          <Form.Item label="审核状态" name="status" style={{ minWidth: 180 }}>
+          <Form.Item name="status" style={{ minWidth: 180 }}>
             <Select
               allowClear
               placeholder="全部状态"
@@ -253,22 +267,26 @@ const Comment = () => {
             />
           </Form.Item>
 
-          <Form.Item label=" " style={{ minWidth: 120 }}>
+          <Form.Item style={{ minWidth: 88 }}>
             <Button onClick={resetFilters}>重置</Button>
+          </Form.Item>
+
+          <Form.Item style={{ minWidth: 108 }}>
+            <Button danger onClick={handleBatchDelete}>
+              批量软删除
+            </Button>
           </Form.Item>
         </Space>
       </Form>
 
       <Space wrap className="batch-row">
-        <Button danger onClick={handleBatchDelete}>
-          批量软删除
-        </Button>
         <Text type="secondary">当前选中 {selectedRowKeys.length} 条</Text>
       </Space>
 
       <Table
         rowKey="id"
         bordered
+        loading={loading}
         className="comment-table"
         dataSource={filteredData}
         columns={columns}
