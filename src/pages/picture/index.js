@@ -71,6 +71,18 @@ const Picture = () => {
     });
   }, [keyword, pictureList, showScope]);
 
+  // 计算图片总数和原图数量，用于显示在筛选按钮上
+  const scopeCounts = useMemo(() => {
+    const allNamesSet = new Set(pictureList.map((item) => String(item.name || '').trim()));
+    const originalCount = pictureList.filter(
+      (item) => !isGeneratedVariant(item.name, allNamesSet)
+    ).length;
+    return {
+      allCount: pictureList.length,
+      originalCount,
+    };
+  }, [pictureList]);
+
   // 上传图片
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -274,8 +286,8 @@ const Picture = () => {
             value={showScope}
             onChange={setShowScope}
             options={[
-              { label: '原图', value: 'original' },
-              { label: '全部', value: 'all' },
+              { label: `原图(${scopeCounts.originalCount})`, value: 'original' },
+              { label: `全部(${scopeCounts.allCount})`, value: 'all' },
             ]}
           />
         </Space>
