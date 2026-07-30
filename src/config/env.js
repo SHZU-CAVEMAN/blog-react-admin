@@ -3,13 +3,13 @@ const trimSlash = (value) => String(value || '').replace(/\/+$/, '');
 const buildDefaultApiBaseUrl = () => {
   return process.env.NODE_ENV === 'production'
     ? `${trimSlash(window.location.origin)}/api`
-  : 'https://127.0.0.1:8081';
+  : 'http://127.0.0.1:8081';
 };
 
 const buildDefaultFileBaseUrl = () => {
   return process.env.NODE_ENV === 'production'
     ? `${trimSlash(window.location.origin)}/uploadFiles`
-  : 'https://127.0.0.1:8081/uploadFiles';
+  : 'http://127.0.0.1:8081/uploadFiles';
 };
 
 export const API_BASE_URL = trimSlash(
