@@ -1,0 +1,77 @@
+/* 文件管理页面样式 */
+.file-page-card {
+  min-height: calc(100vh - 120px);
+}
+
+.file-page-layout {
+  min-height: calc(100vh - 120px);
+}
+
+.file-page-sidebar {
+  position: sticky;
+  top: 12px;
+  z-index: 2;
+  align-self: flex-start;
+  max-height: calc(100vh - 140px);
+}
+
+.file-page-sidebar-card {
+  height: calc(100vh - 140px);
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-page-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.file-page-sidebar-title {
+  font-weight: 600;
+}
+
+.file-page-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: calc(100% - 46px);
+  min-height: 0;
+  padding: 10px 12px 12px;
+  overflow: hidden;
+}
+
+.file-page-panel--right {
+  min-height: 420px;
+}
+
+.file-page-scroll-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  -ms-overflow-style: thin;
+}
+
+.file-page-meta-text {
+  font-size: 12px;
+}
+
+.file-page-scroll-panel::-webkit-scrollbar {
+  width: 4px;
+  background-color: #e3e3e3;
+  border-radius: 3px;
+}
+
+.file-page-scroll-panel::-webkit-scrollbar-thumb {
+  background-color: #b4b4b4;
+  border-radius: 3px;
+}
