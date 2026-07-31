@@ -11,6 +11,7 @@ import ArticleCreate from "@/pages/article/create";
 import ArticleList from "@/pages/article/list";
 import ArticleCategory from "@/pages/article/category";
 import Picture from "@/pages/picture";
+import FilePage from "@/pages/file";
 
 import Message from "@/pages/message";
 import Comment from "@/pages/comment";
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
       { path: "friendLink", element: <Link /> },
       { path: "friendLink/category", element: <LinkCategory /> },
       { path: "picture", element: <Picture /> },
+      { path: "file", element: <FilePage /> },
     ]
   },
   {

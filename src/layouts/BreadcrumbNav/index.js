@@ -18,6 +18,7 @@ const routeLabelMap = {
     '/friendLink': '友链管理',
     '/friendLink/category': '友链分类管理',
     '/picture': '图片管理',
+    '/file': '文件管理',
 };
 
 // 根据路由路径获取对应的显示文本，如果没有映射则返回路径本身

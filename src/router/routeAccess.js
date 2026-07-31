@@ -6,6 +6,7 @@ export const routeAccess = {
   "/comment": ["admin"],
   "/friendLink": ["admin"],
   "/picture": ["admin"],
+  "/file": ["admin"],
 };
 
 export const getRequiredRoles = (pathname) => {

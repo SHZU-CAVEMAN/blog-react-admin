@@ -3,6 +3,7 @@ import {
     CommentOutlined,
     ContainerOutlined,
     DesktopOutlined,
+    FolderOpenOutlined,
     LinkOutlined,
     MailOutlined,
     PictureOutlined,
@@ -52,6 +53,7 @@ const LeftMenu = ({collapsed}) => {
                 getItem('友链分类管理', '/friendLink/category'),
             ]));
             baseItems.splice(7, 0, getItem('图片管理', '/picture', <PictureOutlined />));
+            baseItems.splice(8, 0, getItem('文件管理', '/file', <FolderOpenOutlined />));
             return baseItems;
         }
 
