@@ -19,7 +19,9 @@ export const deleteFileDirectory = ({ dirPath = '', recursive = false }) => {
 };
 
 export const getDirectoryPictures = async (dirPath = '') => {
-  const res = await service.get('/file-upload/files-by-table', {
+  // /file-upload/files-by-table 为查询数据表的文件
+  // /file-upload/files  为查询 uploadFiles 目录的文件
+  const res = await service.get('/file-upload/files', {  
     params: {
       dirPath,
     },
