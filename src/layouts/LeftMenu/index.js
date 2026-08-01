@@ -63,11 +63,12 @@ const LeftMenu = ({collapsed}) => {
     return (
         <div>
             <Menu
+                className="left-menu"
                 defaultSelectedKeys={['1']}
                 defaultOpenKeys={['/article', '/friendLinkMenu']}
                 mode="inline"
                 theme={isDark ? 'dark' : 'light'}
-                style={{height:'100vh'}}
+                style={{ height: '100vh', overflowY: 'auto', overflowX: 'hidden' }}
                 // 是否折叠
                 inlineCollapsed={collapsed}
                 // 菜单树

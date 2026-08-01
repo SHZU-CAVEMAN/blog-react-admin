@@ -1,5 +1,9 @@
 
 .left-menu {
-    background-color: antiquewhite;
-    border: 3px solid red;
+    -ms-overflow-style: none; // IE/Edge隐藏滚动条
+    scrollbar-width: none; // Firefox隐藏滚动条
+}
+
+.left-menu::-webkit-scrollbar {
+    display: none; // Chrome/Safari隐藏滚动条
 }
