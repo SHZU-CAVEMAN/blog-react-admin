@@ -1,14 +1,15 @@
 import service from './request';
 
+// 获取文件目录树
 export const getFileDirectoryTree = async () => {
   const res = await service.get('/file-upload/dirs');
   return res?.data || { name: 'uploadFiles', path: '', children: [] };
 };
-
+// 创建分类
 export const createFileDirectory = ({ parentPath = '', name = '' }) => {
   return service.post('/file-upload/dirs', { parentPath, name });
 };
-
+// 删除分类
 export const deleteFileDirectory = ({ dirPath = '', recursive = false }) => {
   return service.delete('/file-upload/dirs', {
     params: {
@@ -17,7 +18,7 @@ export const deleteFileDirectory = ({ dirPath = '', recursive = false }) => {
     },
   });
 };
-
+// 查询分类下的数据
 export const getDirectoryPictures = async (dirPath = '') => {
   // /file-upload/files-by-table 为查询数据表的文件
   // /file-upload/files  为查询 uploadFiles 目录的文件
@@ -28,7 +29,7 @@ export const getDirectoryPictures = async (dirPath = '') => {
   });
   return res?.data || { dirPath: '', files: [] };
 };
-
+// 上传数据
 export const uploadFileToDirectory = (file, dirPath = '') => {
   const formData = new FormData();
   formData.append('file1', file);
@@ -39,7 +40,7 @@ export const uploadFileToDirectory = (file, dirPath = '') => {
     timeout: 30000,
   });
 };
-
+// 删除分类下的数据
 export const deleteDirectoryPicture = ({ dirPath = '', fileName = '' }) => {
   return service.delete('/file-upload/files', {
     params: {
