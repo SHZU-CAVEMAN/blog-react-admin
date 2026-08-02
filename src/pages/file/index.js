@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Card, Checkbox, Col, Empty, Image, Input, List, Modal, Popconfirm, Row, Space, Tree, Typography, Upload, message } from 'antd';
 import { DeleteOutlined, FolderAddOutlined, FolderOpenOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import {
@@ -74,6 +74,58 @@ const formatFileSize = (size) => {
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 };
 
+// 把图片卡片单独抽成组件，让它只在自己的 props 变化时重渲染
+const FileImageCard = memo(({
+  record,
+  selected,
+  deletingFileName,
+  onDelete,
+  onToggleSelect,
+}) => {
+  return (
+    <Card
+      size="small"
+      style={{ height: '100%' }}
+      bodyStyle={{ padding: 12 }}
+      extra={
+        <Space size="small">
+          <Popconfirm
+            title="确定删除这张图片吗？"
+            okText="确定"
+            cancelText="取消"
+            onConfirm={() => onDelete(record)}
+          >
+            <Button type="link" danger size="small" loading={deletingFileName === record.name}>删除</Button>
+          </Popconfirm>
+          <Checkbox checked={selected} onChange={() => onToggleSelect(record.name)} />
+        </Space>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#fafafa', borderRadius: 6, padding: 8 }}>
+          <Image
+            src={record.url}
+            alt={record.name}
+            width="100%"
+            height={140}
+            style={{ objectFit: 'cover', borderRadius: 6 }}
+          />
+        </div>
+        <Text strong ellipsis>{record.name}</Text>
+        <Text type="secondary" className="file-page-meta-text">
+          {record.relativePath || '-'}
+        </Text>
+        <Text type="secondary" className="file-page-meta-text">
+          {formatFileSize(record.size)}
+        </Text>
+        <Paragraph copyable={{ text: record.url }} className="file-page-meta-text" style={{ marginBottom: 0 }}>
+          {record.url}
+        </Paragraph>
+      </div>
+    </Card>
+  );
+});
+
 const FilePage = () => {
   // 目录树相关状态。
   const [treeData, setTreeData] = useState([]);
@@ -110,7 +162,7 @@ const FilePage = () => {
   }, [files, keyword]);
 
   // 拉取目录树，并同步展开所有节点。
-  const fetchTree = async () => {
+  const fetchTree = useCallback(async () => {
     try {
       setTreeLoading(true);
       const tree = await getFileDirectoryTree();
@@ -123,10 +175,10 @@ const FilePage = () => {
     } finally {
       setTreeLoading(false);
     }
-  };
+  }, []);
 
   // 获取当前目录下的图片列表。
-  const fetchFiles = async (dirPath) => {
+  const fetchFiles = useCallback(async (dirPath) => {
     try {
       setFilesLoading(true);
       const res = await getDirectoryPictures(dirPath);
@@ -137,15 +189,15 @@ const FilePage = () => {
     } finally {
       setFilesLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchTree();
   }, []);
 
   useEffect(() => {
+    fetchTree();
+  }, [fetchTree]);
+
+  useEffect(() => {
     fetchFiles(selectedPath);
-  }, [selectedPath]);
+  }, [fetchFiles, selectedPath]);
 
   // 一键刷新目录树和当前目录文件列表。
   const refreshAll = async () => {
@@ -201,9 +253,9 @@ const FilePage = () => {
     }
   };
   // 切换图片的选中状态。
-  const toggleSelectedImage = (name) => {
+  const toggleSelectedImage = useCallback((name) => {
     setSelectedImageNames((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]));
-  };
+  }, []);
 
   // 移动图片到指定目录
   const handleMoveFiles = async () => {
@@ -261,7 +313,7 @@ const FilePage = () => {
   };
 
   // 删除当前目录下的单张图片。
-  const handleDeleteFile = async (record) => {
+  const handleDeleteFile = useCallback(async (record) => {
     try {
       setDeletingFileName(record.name);
       await deleteDirectoryPicture({
@@ -275,7 +327,7 @@ const FilePage = () => {
     } finally {
       setDeletingFileName('');
     }
-  };
+  }, [fetchFiles, selectedPath]);
 
   return (
     // 页面整体容器，左侧为目录树，右侧为图片列表。
@@ -404,50 +456,14 @@ const FilePage = () => {
                       dataSource={filteredFiles}
                       loading={filesLoading}
                       renderItem={(record) => (
-                        <List.Item>
-                          <Card
-                            size="small"
-                            style={{ height: '100%' }}
-                            bodyStyle={{ padding: 12 }}
-                            extra={
-                              <Space size="small">
-                                <Popconfirm
-                                  title="确定删除这张图片吗？"
-                                  okText="确定"
-                                  cancelText="取消"
-                                  onConfirm={() => handleDeleteFile(record)}
-                                >
-                                  <Button type="link" danger size="small" loading={deletingFileName === record.name}>删除</Button>
-                                </Popconfirm>
-                                <Checkbox
-                                  checked={selectedImageNames.includes(record.name)}
-                                  onChange={() => toggleSelectedImage(record.name)}
-                                />
-                              </Space>
-                            }
-                          >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#fafafa', borderRadius: 6, padding: 8 }}>
-                                <Image
-                                  src={record.url}
-                                  alt={record.name}
-                                  width="100%"
-                                  height={140}
-                                  style={{ objectFit: 'cover', borderRadius: 6 }}
-                                />
-                              </div>
-                              <Text strong ellipsis>{record.name}</Text>
-                              <Text type="secondary" className="file-page-meta-text">
-                                {record.relativePath || '-'}
-                              </Text>
-                              <Text type="secondary" className="file-page-meta-text">
-                                {formatFileSize(record.size)}
-                              </Text>
-                              <Paragraph copyable={{ text: record.url }} className="file-page-meta-text" style={{ marginBottom: 0 }}>
-                                {record.url}
-                              </Paragraph>
-                            </div>
-                          </Card>
+                        <List.Item key={record.name}>
+                          <FileImageCard
+                            record={record}
+                            selected={selectedImageNames.includes(record.name)}
+                            deletingFileName={deletingFileName}
+                            onDelete={handleDeleteFile}
+                            onToggleSelect={toggleSelectedImage}
+                          />
                         </List.Item>
                       )}
                     />
