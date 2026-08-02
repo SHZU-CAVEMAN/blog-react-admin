@@ -9,6 +9,13 @@ export const getFileDirectoryTree = async () => {
 export const createFileDirectory = ({ parentPath = '', name = '' }) => {
   return service.post('/file-upload/dirs', { parentPath, name });
 };
+// 批量移动图片
+export const moveFileDirectories = ({ fromPaths = [], toPath = '' } = {}) => {
+  return service.post('/file-upload/dirs/move', {
+    fromPaths,
+    toPath,
+  });
+};
 // 删除分类
 export const deleteFileDirectory = ({ dirPath = '', recursive = false }) => {
   return service.delete('/file-upload/dirs', {

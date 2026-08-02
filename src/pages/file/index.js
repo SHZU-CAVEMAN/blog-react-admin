@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Col, Empty, Image, Input, List, Popconfirm, Row, Space, Tree, Typography, Upload, message } from 'antd';
+import { Button, Card, Checkbox, Col, Empty, Image, Input, List, Modal, Popconfirm, Row, Space, Tree, Typography, Upload, message } from 'antd';
 import { DeleteOutlined, FolderAddOutlined, FolderOpenOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   createFileDirectory,
@@ -7,6 +7,7 @@ import {
   deleteFileDirectory,
   getDirectoryPictures,
   getFileDirectoryTree,
+  moveFileDirectories,
   uploadFileToDirectory,
 } from '@/api/fileUpload';
 import './index.less';
@@ -14,9 +15,12 @@ import './index.less';
 const { Paragraph, Text } = Typography;
 const ROOT_KEY = '__root__';
 
+// 将目录路径转换为树节点的唯一 key，根节点使用固定占位值。
 const nodePathToKey = (pathValue) => (pathValue ? pathValue : ROOT_KEY);
+// 将树节点的 key 还原为实际目录路径。
 const nodeKeyToPath = (keyValue) => (keyValue === ROOT_KEY ? '' : keyValue);
 
+// 把接口返回的目录结构转换为 Ant Design Tree 可识别的数据格式。
 const toTreeData = (node) => {
   const children = Array.isArray(node?.children) ? node.children : [];
   return {
@@ -26,6 +30,7 @@ const toTreeData = (node) => {
   };
 };
 
+// 递归收集所有节点的 key，用于默认展开整棵目录树。
 const buildExpandedKeys = (node, acc = []) => {
   if (!node) {
     return acc;
@@ -44,6 +49,7 @@ const toPathLabel = (pathValue) => {
   return `uploadFiles/${pathValue}`;
 };
 
+// 将文件大小转换为更易读的展示格式，例如 1.5 MB。
 const formatFileSize = (size) => {
   if (size === undefined || size === null || size === '') {
     return '未知';
@@ -69,6 +75,7 @@ const formatFileSize = (size) => {
 };
 
 const FilePage = () => {
+  // 目录树相关状态。
   const [treeData, setTreeData] = useState([]);
   const [expandedKeys, setExpandedKeys] = useState([ROOT_KEY]);
   const [selectedKey, setSelectedKey] = useState(ROOT_KEY);
@@ -76,6 +83,9 @@ const FilePage = () => {
   const [keyword, setKeyword] = useState('');
   const [newDirName, setNewDirName] = useState('');
   const [recursiveDelete, setRecursiveDelete] = useState(false);
+  const [selectedImageNames, setSelectedImageNames] = useState([]);
+  const [moveModalVisible, setMoveModalVisible] = useState(false);
+  const [moveTargetKey, setMoveTargetKey] = useState(ROOT_KEY);
 
   const [treeLoading, setTreeLoading] = useState(false);
   const [filesLoading, setFilesLoading] = useState(false);
@@ -83,9 +93,12 @@ const FilePage = () => {
   const [deletingFileName, setDeletingFileName] = useState('');
   const [creatingDir, setCreatingDir] = useState(false);
   const [deletingDir, setDeletingDir] = useState(false);
+  const [movingFiles, setMovingFiles] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
 
+  // 当前选中的目录路径，用于请求对应目录下的图片列表。
   const selectedPath = useMemo(() => nodeKeyToPath(selectedKey), [selectedKey]);
+  const moveTargetPath = useMemo(() => nodeKeyToPath(moveTargetKey), [moveTargetKey]);
 
   const filteredFiles = useMemo(() => {
     const k = keyword.trim().toLowerCase();
@@ -96,6 +109,7 @@ const FilePage = () => {
       .some((v) => String(v || '').toLowerCase().includes(k)));
   }, [files, keyword]);
 
+  // 拉取目录树，并同步展开所有节点。
   const fetchTree = async () => {
     try {
       setTreeLoading(true);
@@ -111,7 +125,7 @@ const FilePage = () => {
     }
   };
 
-  // 获取当前目录下的图片列表
+  // 获取当前目录下的图片列表。
   const fetchFiles = async (dirPath) => {
     try {
       setFilesLoading(true);
@@ -133,11 +147,13 @@ const FilePage = () => {
     fetchFiles(selectedPath);
   }, [selectedPath]);
 
+  // 一键刷新目录树和当前目录文件列表。
   const refreshAll = async () => {
     await fetchTree();
     await fetchFiles(selectedPath);
   };
 
+  // 新建子目录。
   const handleCreateDir = async () => {
     const name = String(newDirName || '').trim();
     if (!name) {
@@ -161,6 +177,7 @@ const FilePage = () => {
     }
   };
 
+  // 删除当前选中的目录。
   const handleDeleteDir = async () => {
     if (!selectedPath) {
       message.warning('根目录不允许删除');
@@ -183,7 +200,47 @@ const FilePage = () => {
       setDeletingDir(false);
     }
   };
+  // 切换图片的选中状态。
+  const toggleSelectedImage = (name) => {
+    setSelectedImageNames((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]));
+  };
 
+  // 移动图片到指定目录
+  const handleMoveFiles = async () => {
+    if (!selectedImageNames.length) {
+      message.warning('请先选择要移动的图片');
+      return;
+    }
+
+    if (!moveTargetPath) {
+      message.warning('请选择目标目录');
+      return;
+    }
+
+    if (selectedPath === moveTargetPath) {
+      message.warning('目标目录不能与当前目录相同');
+      return;
+    }
+
+    try {
+      setMovingFiles(true);
+      await moveFileDirectories({
+        fromPaths: selectedImageNames,
+        toPath: moveTargetPath,
+      });
+      message.success('图片移动成功');
+      setSelectedImageNames([]);
+      setMoveTargetKey(ROOT_KEY);
+      setMoveModalVisible(false);
+      await fetchFiles(selectedPath);
+    } catch (error) {
+      message.error(error?.message || error?.msg || '图片移动失败');
+    } finally {
+      setMovingFiles(false);
+    }
+  };
+
+  // 上传图片到当前目录。
   const handleUpload = async () => {
     if (!selectedFile) {
       message.warning('请先选择图片');
@@ -203,6 +260,7 @@ const FilePage = () => {
     }
   };
 
+  // 删除当前目录下的单张图片。
   const handleDeleteFile = async (record) => {
     try {
       setDeletingFileName(record.name);
@@ -220,10 +278,12 @@ const FilePage = () => {
   };
 
   return (
+    // 页面整体容器，左侧为目录树，右侧为图片列表。
     <Card bodyStyle={{ padding: 8 }} className="file-page-card">
       <Space direction="vertical" size={6} style={{ width: '100%' }}>
         <Row gutter={8} className="file-page-layout">
           <Col xs={24} md={8} lg={7} xl={6}>
+            {/* 左侧目录管理区域 */}
             <div className="file-page-sidebar">
               <Card
                 title="目录树"
@@ -293,6 +353,7 @@ const FilePage = () => {
           </Col>
 
           <Col xs={24} md={16} lg={17} xl={18}>
+            {/* 右侧图片管理区域 */}
             <Card title="目录图片" size="small" bodyStyle={{ padding: 10 }}>
               <div className="file-page-panel file-page-panel--right">
                 <Space wrap>
@@ -314,6 +375,13 @@ const FilePage = () => {
                   </Upload>
 
                   <Button type="primary" onClick={handleUpload} loading={uploading}>上传到当前目录</Button>
+                  <Button
+                    type="primary"
+                    disabled={!selectedImageNames.length}
+                    onClick={() => setMoveModalVisible(true)}
+                  >
+                    移动到新目录
+                  </Button>
                   <Button icon={<ReloadOutlined />} onClick={refreshAll} loading={filesLoading || treeLoading}>刷新</Button>
                   <Input
                     allowClear
@@ -326,7 +394,7 @@ const FilePage = () => {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <Text type="secondary" className="file-page-meta-text">当前目录：{toPathLabel(selectedPath)}</Text>
-                  <Text type="secondary" className="file-page-meta-text">共 {filteredFiles.length} 项</Text>
+                  <Text type="secondary" className="file-page-meta-text">共 {filteredFiles.length} 项 / 已选 {selectedImageNames.length} 张</Text>
                 </div>
 
                 <div className="file-page-scroll-panel">
@@ -342,14 +410,20 @@ const FilePage = () => {
                             style={{ height: '100%' }}
                             bodyStyle={{ padding: 12 }}
                             extra={
-                              <Popconfirm
-                                title="确定删除这张图片吗？"
-                                okText="确定"
-                                cancelText="取消"
-                                onConfirm={() => handleDeleteFile(record)}
-                              >
-                                <Button type="link" danger size="small" loading={deletingFileName === record.name}>删除</Button>
-                              </Popconfirm>
+                              <Space size="small">
+                                <Popconfirm
+                                  title="确定删除这张图片吗？"
+                                  okText="确定"
+                                  cancelText="取消"
+                                  onConfirm={() => handleDeleteFile(record)}
+                                >
+                                  <Button type="link" danger size="small" loading={deletingFileName === record.name}>删除</Button>
+                                </Popconfirm>
+                                <Checkbox
+                                  checked={selectedImageNames.includes(record.name)}
+                                  onChange={() => toggleSelectedImage(record.name)}
+                                />
+                              </Space>
                             }
                           >
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -386,6 +460,32 @@ const FilePage = () => {
           </Col>
         </Row>
       </Space>
+      <Modal
+        title="选择目标目录"
+        open={moveModalVisible}
+        onCancel={() => setMoveModalVisible(false)}
+        confirmLoading={movingFiles}
+        onOk={handleMoveFiles}
+        okText="确认移动"
+        cancelText="取消"
+      >
+        <div style={{ marginTop: 8 }}>
+          <Text type="secondary">请选择要移动到的目录：</Text>
+          <Tree
+            style={{ marginTop: 8 }}
+            showLine={{ showLeafIcon: false }}
+            blockNode
+            treeData={treeData}
+            selectedKeys={[moveTargetKey]}
+            expandedKeys={expandedKeys}
+            onExpand={(keys) => setExpandedKeys(keys)}
+            onSelect={(keys) => {
+              const nextKey = keys?.[0] || ROOT_KEY;
+              setMoveTargetKey(nextKey);
+            }}
+          />
+        </div>
+      </Modal>
     </Card>
   );
 };
