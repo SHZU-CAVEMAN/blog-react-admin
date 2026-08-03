@@ -248,6 +248,19 @@ const FilePage = () => {
     setSelectedImageNames((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]));
   }, []);
 
+  // 切换当前目录下所有图片的选中状态，如果全部已选则取消全选，否则全选。
+  const toggleSelectAll = useCallback(() => {
+    const currentNames = filteredFiles.map((item) => item.name);
+    const allSelected = currentNames.length > 0 && currentNames.every((name) => selectedImageNames.includes(name));
+    // 如果当前目录下所有图片都已选中，则取消全选。
+    if (allSelected) {
+      setSelectedImageNames((prev) => prev.filter((name) => !currentNames.includes(name)));
+      return;
+    }
+    // 如果当前目录下有图片未选中，则将它们加入已选列表，避免重复添加。
+    setSelectedImageNames((prev) => Array.from(new Set([...prev, ...currentNames])));
+  }, [filteredFiles, selectedImageNames]);
+
   // 将目录路径规范化为以斜杠开头且不以斜杠结尾的格式，便于后续拼接。
   const normalizeMovePath = (pathValue) => {
     const cleaned = String(pathValue || '')
@@ -443,6 +456,9 @@ const FilePage = () => {
                       移动到新目录
                     </Button>
                     <Button icon={<ReloadOutlined />} onClick={refreshAll} loading={filesLoading || treeLoading}>刷新</Button>
+                    <Button onClick={toggleSelectAll}>
+                      {filteredFiles.length > 0 && filteredFiles.every((item) => selectedImageNames.includes(item.name)) ? '全不选' : '全选'}
+                    </Button>
                   </Space>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
