@@ -27,9 +27,9 @@ export const deleteFileDirectory = ({ dirPath = '', recursive = false }) => {
 };
 // 查询分类下的数据
 export const getDirectoryPictures = async (dirPath = '') => {
-  // /file-upload/files-by-table 为查询数据表的文件
-  // /file-upload/files  为查询 uploadFiles 目录的文件
-  const res = await service.get('/file-upload/files', {  
+  // /file-upload/files-by-table 查询数据表的文件记录
+  // /file-upload/files  查询纯文件目录
+  const res = await service.get('/file-upload/files-by-table', {  
     params: {
       dirPath,
     },

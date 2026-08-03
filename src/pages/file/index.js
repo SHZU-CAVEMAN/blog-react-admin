@@ -257,6 +257,14 @@ const FilePage = () => {
     setSelectedImageNames((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]));
   }, []);
 
+  // 将目录路径规范化为以斜杠开头且不以斜杠结尾的格式，便于后续拼接。
+  const normalizeMovePath = (pathValue) => {
+    const cleaned = String(pathValue || '')
+      .replace(/^uploadFiles\//, '')
+      .replace(/^\/+/, '')
+      .replace(/\/+$/, '');
+    return cleaned ? `/${cleaned}` : '/';
+  };
   // 移动图片到指定目录
   const handleMoveFiles = async () => {
     if (!selectedImageNames.length) {
@@ -269,16 +277,24 @@ const FilePage = () => {
       return;
     }
 
-    if (selectedPath === moveTargetPath) {
-      message.warning('目标目录不能与当前目录相同');
-      return;
-    }
-
     try {
       setMovingFiles(true);
+      const fromPaths = selectedImageNames
+        .map((name) => {
+          const item = files.find((file) => file.name === name);
+          if (!item) {
+            return null;
+          }
+          return {
+            id: item.id,
+            path: `${normalizeMovePath(selectedPath)}/${String(name).replace(/^\/+/, '')}`,
+          };
+        })
+        .filter(Boolean);
+
       await moveFileDirectories({
-        fromPaths: selectedImageNames,
-        toPath: moveTargetPath,
+        fromPaths,
+        toPath: normalizeMovePath(moveTargetPath),
       });
       message.success('图片移动成功');
       setSelectedImageNames([]);
