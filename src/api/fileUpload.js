@@ -47,12 +47,6 @@ export const uploadFileToDirectory = (file, dirPath = '') => {
     timeout: 30000,
   });
 };
-// 删除分类下的数据
-export const deleteDirectoryPicture = ({ dirPath = '', fileName = '' }) => {
-  return service.delete('/file-upload/files', {
-    params: {
-      dirPath,
-      fileName,
-    },
-  });
+export const deleteDirectoryPicture = (id = '') => {
+  return service.delete(`/file-upload/files/${id}`);
 };

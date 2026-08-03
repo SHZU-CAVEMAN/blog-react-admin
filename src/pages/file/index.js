@@ -341,10 +341,7 @@ const FilePage = () => {
   const handleDeleteFile = useCallback(async (record) => {
     try {
       setDeletingFileName(record.name);
-      await deleteDirectoryPicture({
-        dirPath: selectedPath,
-        fileName: record.name,
-      });
+      await deleteDirectoryPicture(record.id);
       message.success('图片删除成功');
       await fetchFiles(selectedPath);
     } catch (error) {
