@@ -1,10 +1,18 @@
 /* 文件管理页面样式 */
+html, body {
+  overflow: hidden; //最外层禁用滚动
+}
+
 .file-page-card {
   min-height: calc(100vh - 120px);
+  height: calc(100vh - 120px); //固定一个高度，外层不参与滚动
+  overflow: hidden;
 }
 
 .file-page-layout {
   min-height: calc(100vh - 120px);
+  height: calc(100vh - 120px);
+  overflow: hidden;
 }
 
 .file-page-sidebar {
@@ -16,7 +24,7 @@
 }
 
 .file-page-sidebar-card {
-  height: calc(100vh - 140px);
+  height: calc(100vh - 160px);
   min-height: 420px;
   overflow: hidden;
   border: 1px solid #f0f0f0;
@@ -49,7 +57,16 @@
 }
 
 .file-page-panel--right {
+  height: calc(100vh - 220px);
   min-height: 420px;
+  overflow: hidden;
+}
+
+.file-page-toolbar {
+  flex-shrink: 0;
+  padding-bottom: 6px;
+  background: #fff;
+  z-index: 1;
 }
 
 .file-page-scroll-panel {

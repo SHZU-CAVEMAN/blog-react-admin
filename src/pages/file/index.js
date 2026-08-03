@@ -111,7 +111,6 @@ const FileImageCard = memo(({
             style={{ objectFit: 'cover', borderRadius: 6 }}
           />
         </div>
-        <Text strong ellipsis>{record.name}</Text>
         <Text type="secondary" className="file-page-meta-text">
           {record.relativePath || '-'}
         </Text>
@@ -424,45 +423,47 @@ const FilePage = () => {
             {/* 右侧图片管理区域 */}
             <Card title="目录图片" size="small" bodyStyle={{ padding: 10 }}>
               <div className="file-page-panel file-page-panel--right">
-                <Space wrap>
-                  <Upload
-                    accept="image/*"
-                    beforeUpload={(file) => {
-                      if (!file.type || !file.type.startsWith('image/')) {
-                        message.warning('只能上传图片文件');
-                        return Upload.LIST_IGNORE;
-                      }
-                      setSelectedFile(file);
-                      return false;
-                    }}
-                    maxCount={1}
-                    showUploadList={selectedFile ? [{ uid: selectedFile.uid || selectedFile.name, name: selectedFile.name, status: 'done' }] : false}
-                    onRemove={() => setSelectedFile(null)}
-                  >
-                    <Button icon={<UploadOutlined />}>选择图片</Button>
-                  </Upload>
+                <div className="file-page-toolbar">
+                  <Space wrap>
+                    <Upload
+                      accept="image/*"
+                      beforeUpload={(file) => {
+                        if (!file.type || !file.type.startsWith('image/')) {
+                          message.warning('只能上传图片文件');
+                          return Upload.LIST_IGNORE;
+                        }
+                        setSelectedFile(file);
+                        return false;
+                      }}
+                      maxCount={1}
+                      showUploadList={selectedFile ? [{ uid: selectedFile.uid || selectedFile.name, name: selectedFile.name, status: 'done' }] : false}
+                      onRemove={() => setSelectedFile(null)}
+                    >
+                      <Button icon={<UploadOutlined />}>选择图片</Button>
+                    </Upload>
 
-                  <Button type="primary" onClick={handleUpload} loading={uploading}>上传到当前目录</Button>
-                  <Button
-                    type="primary"
-                    disabled={!selectedImageNames.length}
-                    onClick={() => setMoveModalVisible(true)}
-                  >
-                    移动到新目录
-                  </Button>
-                  <Button icon={<ReloadOutlined />} onClick={refreshAll} loading={filesLoading || treeLoading}>刷新</Button>
-                  <Input
-                    allowClear
-                    value={keyword}
-                    onChange={(event) => setKeyword(event.target.value)}
-                    placeholder="按名称或路径搜索"
-                    style={{ width: 260 }}
-                  />
-                </Space>
+                    <Button type="primary" onClick={handleUpload} loading={uploading}>上传到当前目录</Button>
+                    <Button
+                      type="primary"
+                      disabled={!selectedImageNames.length}
+                      onClick={() => setMoveModalVisible(true)}
+                    >
+                      移动到新目录
+                    </Button>
+                    <Button icon={<ReloadOutlined />} onClick={refreshAll} loading={filesLoading || treeLoading}>刷新</Button>
+                    <Input
+                      allowClear
+                      value={keyword}
+                      onChange={(event) => setKeyword(event.target.value)}
+                      placeholder="按名称或路径搜索"
+                      style={{ width: 260 }}
+                    />
+                  </Space>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <Text type="secondary" className="file-page-meta-text">当前目录：{toPathLabel(selectedPath)}</Text>
-                  <Text type="secondary" className="file-page-meta-text">共 {filteredFiles.length} 项 / 已选 {selectedImageNames.length} 张</Text>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                    <Text type="secondary" className="file-page-meta-text">当前目录：{toPathLabel(selectedPath)}</Text>
+                    <Text type="secondary" className="file-page-meta-text">共 {filteredFiles.length} 项 / 已选 {selectedImageNames.length} 张</Text>
+                  </div>
                 </div>
 
                 <div className="file-page-scroll-panel">
