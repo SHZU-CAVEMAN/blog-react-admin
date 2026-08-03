@@ -131,7 +131,6 @@ const FilePage = () => {
   const [expandedKeys, setExpandedKeys] = useState([ROOT_KEY]);
   const [selectedKey, setSelectedKey] = useState(ROOT_KEY);
   const [files, setFiles] = useState([]);
-  const [keyword, setKeyword] = useState('');
   const [newDirName, setNewDirName] = useState('');
   const [recursiveDelete, setRecursiveDelete] = useState(false);
   const [selectedImageNames, setSelectedImageNames] = useState([]);
@@ -151,14 +150,7 @@ const FilePage = () => {
   const selectedPath = useMemo(() => nodeKeyToPath(selectedKey), [selectedKey]);
   const moveTargetPath = useMemo(() => nodeKeyToPath(moveTargetKey), [moveTargetKey]);
 
-  const filteredFiles = useMemo(() => {
-    const k = keyword.trim().toLowerCase();
-    if (!k) {
-      return files;
-    }
-    return files.filter((item) => [item.name, item.url, item.relativePath]
-      .some((v) => String(v || '').toLowerCase().includes(k)));
-  }, [files, keyword]);
+  const filteredFiles = files;
 
   // 拉取目录树，并同步展开所有节点。
   const fetchTree = useCallback(async () => {
@@ -451,13 +443,6 @@ const FilePage = () => {
                       移动到新目录
                     </Button>
                     <Button icon={<ReloadOutlined />} onClick={refreshAll} loading={filesLoading || treeLoading}>刷新</Button>
-                    <Input
-                      allowClear
-                      value={keyword}
-                      onChange={(event) => setKeyword(event.target.value)}
-                      placeholder="按名称或路径搜索"
-                      style={{ width: 260 }}
-                    />
                   </Space>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
