@@ -87,22 +87,9 @@ const FileImageCard = memo(({
       size="small"
       style={{ height: '100%' }}
       bodyStyle={{ padding: 12 }}
-      extra={
-        <Space size="small">
-          <Popconfirm
-            title="确定删除这张图片吗？"
-            okText="确定"
-            cancelText="取消"
-            onConfirm={() => onDelete(record)}
-          >
-            <Button type="link" danger size="small" loading={deletingFileName === record.name}>删除</Button>
-          </Popconfirm>
-          <Checkbox checked={selected} onChange={() => onToggleSelect(record.name)} />
-        </Space>
-      }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#fafafa', borderRadius: 6, padding: 8 }}>
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#fafafa', borderRadius: 6, padding: 8 }}>
           <Image
             src={record.url}
             alt={record.name}
@@ -110,6 +97,24 @@ const FileImageCard = memo(({
             height={140}
             style={{ objectFit: 'cover', borderRadius: 6 }}
           />
+          <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Popconfirm
+              title="确定删除这张图片吗？"
+              okText="确定"
+              cancelText="取消"
+              onConfirm={() => onDelete(record)}
+            >
+              <Button
+                type="text"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                loading={deletingFileName === record.name}
+                style={{ padding: 0, width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.9)' }}
+              />
+            </Popconfirm>
+            <Checkbox checked={selected} onChange={() => onToggleSelect(record.name)} />
+          </div>
         </div>
         <Text type="secondary" className="file-page-meta-text">
           {record.relativePath || '-'}
