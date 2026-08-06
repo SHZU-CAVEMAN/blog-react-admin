@@ -1,11 +1,9 @@
 import { Form, Input, Select, DatePicker, Card } from 'antd';
-import PictureUploadField from '@/components/PictureUploadField';
 
 const ArticleBaseFields = ({
-  categoryOptions = [],
-  selectedPictureFile,
-  onSelectedPictureFileChange,
-  compact = false,
+  categoryOptions = [], // 分类下拉数据
+
+  compact = false, // 是否紧凑模式，紧凑模式下表单项间距更小
 }) => {
   return (
     <Card title="文章信息" size={compact ? 'small' : 'default'}>
@@ -54,14 +52,20 @@ const ArticleBaseFields = ({
       </Form.Item>
 
       <Form.Item label="图片">
-        <PictureUploadField
-          selectedFile={selectedPictureFile}
-          onSelectedFileChange={onSelectedPictureFileChange}
-        />
-      </Form.Item>
-
-      <Form.Item name="picture" hidden>
-        <Input />
+        <Form.Item name="picture" style={{ marginBottom: 8 }}>
+          <Input placeholder="请输入文件 ID" />
+        </Form.Item>
+        <Form.Item shouldUpdate style={{ marginBottom: 0 }}>
+          {({ getFieldValue }) => {
+            const pictureValue = getFieldValue('picture');
+            const previewUrl = pictureValue ? `http://cavetop.fun/api/files/${encodeURIComponent(pictureValue)}` : '';
+            return previewUrl ? (
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, overflow: 'hidden' }}>
+                <img src={previewUrl} alt="图片预览" style={{ width: '100%', maxHeight: 220, objectFit: 'cover' }} />
+              </div>
+            ) : null;
+          }}
+        </Form.Item>
       </Form.Item>
     </Card>
   );

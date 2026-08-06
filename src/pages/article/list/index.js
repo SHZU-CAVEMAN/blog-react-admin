@@ -2,12 +2,14 @@ import { Space, Table, Button, Form, message, Input, Select, Drawer,Tooltip } fr
 import { useState,useEffect, useMemo, useCallback } from 'react';
 import { useNavigate,useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
+
 import { getArticleList,updateArticle} from '@/api/article'
 import { getCategoryList} from '@/api/category'
-import { uploadSingleFile } from '@/api/upload';
-import ArticleBaseFields from '@/components/ArticleBaseFields';
-import { FILE_BASE_URL } from '@/config/env';
+
+import ArticleBaseFields from '@/components/ArticleBaseFields'; 
+
 import './index.less';
+
 const { Column } = Table;
 
 const ArticleList = () => {
@@ -21,22 +23,9 @@ const ArticleList = () => {
   const [filterCategoryId, setFilterCategoryId] = useState(undefined); // 分类筛选
   const [filterCategoryLabel, setFilterCategoryLabel] = useState(''); // 分类筛选标签
   const [filterStatus, setFilterStatus] = useState('active'); // 状态筛选：首次进入默认只看 active
-  const [selectedPictureFile, setSelectedPictureFile] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [formDrawerOpen, setFormDrawerOpen] = useState(false);
 
-  const normalizePictureUrl = useCallback((value) => {
-    const raw = String(value || '').trim();
-    if (!raw) {
-      return '';
-    }
-    if (/^https?:\/\//i.test(raw)) {
-      return raw;
-    }
-    const cleaned = raw.replace(/^\/+/, '').replace(/^uploadFiles\//i, '');
-    const hasExt = /\.[a-z0-9]+$/i.test(cleaned);
-    return `${FILE_BASE_URL}${hasExt ? cleaned : `${cleaned}.jpg`}`;
-  }, []);
   
   const fetchList = useCallback(async () => {
     try {
@@ -57,7 +46,7 @@ const ArticleList = () => {
       const list = articleItems
         .map(item => ({
           ...item,
-          picture: normalizePictureUrl(item.picture || item.cover || ''),
+          picture: item.picture || item.cover || '',
           title: item.title || item.name || '',
           categoryId: item.categoryId || item.category_id ? String(item.categoryId || item.category_id) : undefined,
           categoryName: item.categoryName || item.category_name || '',
@@ -66,7 +55,6 @@ const ArticleList = () => {
           key: item.id, // 把文章id设置为表格行的 key
         }))
         .sort((a, b) => Number(b.id || b.key || 0) - Number(a.id || a.key || 0));
-      //console.log("文章信息：", res);
       setDataSource(list);
     } catch (error) {
       // 新返回格式失败信息统一在 message 字段
@@ -75,7 +63,7 @@ const ArticleList = () => {
     } finally {
       setRefreshing(false);
     }
-  }, [normalizePictureUrl]);
+  }, []);
 
   useEffect(() => {
     fetchList();
@@ -92,12 +80,6 @@ const ArticleList = () => {
     };
   }, [location.pathname]); // 确保在路由切换时清理状态
 
-  const uploadPicture = async (file, articleId) => {
-    const res = await uploadSingleFile(file, articleId);
-    // 新返回格式已在公共 request 层判定成功/失败，这里直接读取上传结果字段
-    return normalizePictureUrl(res.content_key);
-  };
-  
   // 更新 （按钮）
   const handleSubmit = () => {
     form.validateFields().then(async values => {
@@ -118,13 +100,6 @@ const ArticleList = () => {
         ...newValues,
         id: editingKey,
       });
-      // 更新图片
-      if (selectedPictureFile) {
-        const pictureUrl = await uploadPicture(selectedPictureFile, editingKey);
-        newValues.picture = pictureUrl;
-        form.setFieldValue('picture', pictureUrl);
-      }
-
       message.success('文章信息已更新');
       // 更新 table （不发新请求）
       /*
@@ -139,7 +114,6 @@ const ArticleList = () => {
       // 清空 表单
       form.resetFields();
       setEditingKey(null);
-      setSelectedPictureFile(null);
       setFormDrawerOpen(false);
     });
   };
@@ -157,7 +131,6 @@ const ArticleList = () => {
         ? dayjs(record.publishTime)
         : null,
     });
-    setSelectedPictureFile(null);
     setEditingKey(record.key);
     setFormDrawerOpen(true);
   };
@@ -358,8 +331,6 @@ const ArticleList = () => {
         <Form form={form} layout="vertical" size="small" className="article-edit-form-compact">
           <ArticleBaseFields
             categoryOptions={categoryData}
-            selectedPictureFile={selectedPictureFile}
-            onSelectedPictureFileChange={setSelectedPictureFile}
             compact
           />
         </Form>

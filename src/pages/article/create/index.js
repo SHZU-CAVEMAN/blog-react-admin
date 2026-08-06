@@ -5,9 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Button ,Drawer, message } from 'antd';
 import { getCategoryList } from '@/api/category';
 import { addArticle, updateArticle, getArticleById, publishArticle } from '@/api/article';
-import { uploadSingleFile } from '@/api/upload';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
-import { FILE_BASE_URL } from '@/config/env';
 import './index.less';
 
 const SNAPSHOT_INTERVAL_MS = 5000; // 快照间隔：5s
@@ -17,7 +15,6 @@ const SNAPSHOT_FORM_KEYS = ['title', 'picture', 'categoryId', 'publishTime', 'su
 const ArticleCreate = () => {
   const [content, setContent] = useState('**Hello Markdown**');
   const [categoryOptions, setCategoryOptions] = useState([]);
-  const [selectedPictureFile, setSelectedPictureFile] = useState(null);
   const [submittingAction, setSubmittingAction] = useState(''); // 当前提交动作：'add' | 'update' | 'publish'
   const [form] = Form.useForm();
   // 记录最近一次已成功加载详情的文章 id。
@@ -153,7 +150,7 @@ const ArticleCreate = () => {
         // 初始化表单字段值
         form.setFieldsValue({
           title: currenArticle.title || currenArticle.name || '',
-          picture: normalizePictureUrl(currenArticle.picture || currenArticle.cover || ''),
+          picture: currenArticle.picture || currenArticle.cover || '',
           categoryId: currenArticle.categoryId || currenArticle.category_id
             ? String(currenArticle.categoryId || currenArticle.category_id)
             : undefined,
@@ -163,8 +160,7 @@ const ArticleCreate = () => {
           summary: currenArticle.summary || currenArticle.intro || '',
           status: currenArticle.status || '',
         });
-        // 3 初始化 content 和 selectedPictureFile 的状态
-        setSelectedPictureFile(null);
+        // 3 初始化 content 的状态
         setContent(currenArticle.content || '');
         // 4 打开抽屉显示文章信息表单
         setFormDrawerOpen(true);
@@ -221,30 +217,6 @@ const ArticleCreate = () => {
       content,
     };
   };
-  // 处理图片 URL，若是相对路径则拼接 FILE_BASE_URL
-  const normalizePictureUrl = (value) => {
-    const raw = String(value || '').trim();
-    if (!raw) {
-      return '';
-    }
-    if (/^https?:\/\//i.test(raw)) {
-      return raw;
-    }
-    const cleaned = raw.replace(/^\/+/, '').replace(/^uploadFiles\//i, '');
-    const hasExt = /\.[a-z0-9]+$/i.test(cleaned);
-    return `${FILE_BASE_URL}${hasExt ? cleaned : `${cleaned}.jpg`}`;
-  };
-
-  // 上传文章封面图片
-  const uploadPicture = async (file, articleId) => {
-    const res = await uploadSingleFile(file, articleId);
-    if (!res?.content_key) {
-      throw new Error(res?.message || '上传失败');
-    }
-    message.success(res?.message || '上传成功');
-    return normalizePictureUrl(res.content_key);
-  };
-
   // 新建文章
   const handleCreateNew = async () => {
     try {
@@ -260,11 +232,6 @@ const ArticleCreate = () => {
         clearSnapshot(`${SNAPSHOT_PREFIX}draft`);
 
         navigate(`/article/create?mode=edit&id=${nextId}`, { replace: true });
-
-        if (selectedPictureFile) {
-          const pictureUrl = await uploadPicture(selectedPictureFile, nextId);
-          form.setFieldValue('picture', pictureUrl);
-        }
       } else {
         message.warning('新建成功，但接口未返回文章ID，后续请从列表页重新进入编辑');
       }
@@ -304,11 +271,6 @@ const ArticleCreate = () => {
         });
       }
 
-      if (selectedPictureFile) {
-        const pictureUrl = await uploadPicture(selectedPictureFile, routeArticleId);
-        form.setFieldValue('picture', pictureUrl);
-      }
-
       // 手动保存后，清理当前快照。
       clearSnapshot(snapshotKey);
 
@@ -328,7 +290,6 @@ const ArticleCreate = () => {
   const handleClearAll = () => {
     form.resetFields();
     setContent('');
-    setSelectedPictureFile(null);
     lastLoadedArticleIdRef.current = '';
     // 主动清空时同步删除快照。
     clearSnapshot(snapshotKey);
@@ -373,8 +334,6 @@ const ArticleCreate = () => {
                 <Form form={form} layout="vertical" size="small" className="article-edit-form-compact">
                   <ArticleBaseFields
                     categoryOptions={categoryOptions}
-                    selectedPictureFile={selectedPictureFile}
-                    onSelectedPictureFileChange={setSelectedPictureFile}
                     compact
                   />
                 </Form>
