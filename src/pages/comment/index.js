@@ -18,21 +18,6 @@ import './index.less';
 
 const { Text, Paragraph } = Typography;
 
-const STATUS_OPTIONS = [
-  { label: '待审核', value: 'pending' },
-  { label: '已通过', value: 'approved' },
-  { label: '已拒绝', value: 'rejected' },
-  { label: '垃圾评论', value: 'spam' },
-  { label: '已删除', value: 'deleted' },
-];
-
-const STATUS_COLOR_MAP = {
-  pending: 'gold',
-  approved: 'green',
-  rejected: 'red',
-  spam: 'default',
-  deleted: 'default',
-};
 
 const Comment = () => {
   const [filterForm] = Form.useForm();
@@ -43,52 +28,26 @@ const Comment = () => {
   const [articleFilter, setArticleFilter] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
-  const normalizeStatus = useCallback((status) => {
-    const normalized = String(status || '').trim().toLowerCase();
-    if (!normalized) {
-      return 'pending';
-    }
-    if (['enable', 'enabled', 'approved', 'pass', 'passed'].includes(normalized)) {
-      return 'approved';
-    }
-    if (['disable', 'disabled', 'deleted', 'delete', 'removed'].includes(normalized)) {
-      return 'deleted';
-    }
-    if (['reject', 'rejected', 'refused'].includes(normalized)) {
-      return 'rejected';
-    }
-    if (['spam', 'garbage', 'junk'].includes(normalized)) {
-      return 'spam';
-    }
-    if (['pending', 'wait', 'waiting', 'review'].includes(normalized)) {
-      return 'pending';
-    }
-    return normalized;
-  }, []);
-
+  // 获取评论列表
   const fetchComments = useCallback(async () => {
     try {
       setLoading(true);
       const res = await getAllCommentList();
       const items = Array.isArray(res?.data) ? res.data : [];
+      // 规范化数据，过滤掉没有id的脏数据，并按评论时间降序排序
       const normalized = items
         .map((item) => ({
           id: item.id,
-          articleTitle: item.articleTitle || item.article_title || item.title || '-',
-          nickname: item.nickname || item.name || '匿名用户',
-          email: item.email || '-',
-          content: item.content || item.comment_content || '',
-          status: normalizeStatus(item.status),
-          createdAt:
-            item.createdAt ||
-            item.comment_time ||
-            item.commentTime ||
-            item.create_time ||
-            item.created_at ||
-            '',
+          articleTitle: item.title,
+          nickname: item.nickname,
+          email: item.email,
+          content: item.content,
+          status: String(item.status || '').trim().toLowerCase() === 'enable' ? 'enable' : 'disable',
+          createdAt: item.comment_time || '',
         }))
         .filter((item) => item.id !== undefined && item.id !== null)
         .sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf());
+      // 赋值给 dataSource  
       setDataSource(normalized);
     } catch (error) {
       message.error(error?.message || error?.msg || '获取评论列表失败，请稍后重试');
@@ -96,24 +55,27 @@ const Comment = () => {
     } finally {
       setLoading(false);
     }
-  }, [normalizeStatus]);
+  }, []);
 
   useEffect(() => {
     fetchComments();
   }, [fetchComments]);
 
+  // 根据筛选条件过滤数据
   const filteredData = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase();
-    const normalizedArticle = articleFilter.trim().toLowerCase();
+
+    const normalizedKeyword = keyword.trim().toLowerCase(); // 关键词
+    const normalizedArticle = articleFilter.trim().toLowerCase(); // 文章标题
 
     return dataSource.filter((item) => {
+      // 关键词匹配：评论内容、评论人昵称、评论人邮箱
       const keywordMatched =
         !normalizedKeyword ||
         [item.content, item.nickname, item.email]
           .some((field) => String(field || '').toLowerCase().includes(normalizedKeyword));
-
+      // 状态匹配：启用/禁用
       const statusMatched = !statusFilter || item.status === statusFilter;
-
+      // 文章标题匹配
       const articleMatched =
         !normalizedArticle ||
         String(item.articleTitle || '').toLowerCase().includes(normalizedArticle);
@@ -122,33 +84,34 @@ const Comment = () => {
     });
   }, [articleFilter, dataSource, keyword, statusFilter]);
 
+  // 重置筛选条件
   const resetFilters = () => {
     filterForm.resetFields();
     setKeyword('');
     setStatusFilter(undefined);
     setArticleFilter('');
   };
-
+  // 修改评论状态
   const updateStatus = (ids, status) => {
     setDataSource((prev) =>
       prev.map((item) => (ids.includes(item.id) ? { ...item, status } : item))
     );
   };
-
+  // 单个删除
   const handleDelete = (id) => {
-    updateStatus([id], 'deleted');
+    updateStatus([id], 'disable');
     setSelectedRowKeys((prev) => prev.filter((key) => key !== id));
-    message.success('评论已软删除');
+    message.success('评论已禁用');
   };
-
+  // 批量删除
   const handleBatchDelete = () => {
     if (!selectedRowKeys.length) {
       message.warning('请先选择评论');
       return;
     }
-    updateStatus(selectedRowKeys, 'deleted');
+    updateStatus(selectedRowKeys, 'disable');
     setSelectedRowKeys([]);
-    message.success('已软删除选中评论');
+    message.success('已禁用选中评论');
   };
 
   const columns = [
@@ -205,8 +168,8 @@ const Comment = () => {
       key: 'status',
       width: 80,
       render: (value) => {
-        const option = STATUS_OPTIONS.find((item) => item.value === value);
-        return <Tag color={STATUS_COLOR_MAP[value]}>{option?.label || value}</Tag>;
+        const isEnabled = String(value || '').trim().toLowerCase() === 'enable';
+        return <Tag color={isEnabled ? 'green' : 'default'}>{isEnabled ? '启用' : '禁用'}</Tag>;
       },
     },
     {
@@ -227,10 +190,10 @@ const Comment = () => {
             okText="确定"
             cancelText="取消"
             onConfirm={() => handleDelete(record.id)}
-            disabled={record.status === 'deleted'}
+            disabled={record.status === 'disable'}
           >
-            <Button type="link" danger disabled={record.status === 'deleted'}>
-              {record.status === 'deleted' ? '已删除' : '删除'}
+            <Button type="link" danger disabled={record.status === 'disable'}>
+              {record.status === 'disable' ? '已禁用' : '禁用'}
             </Button>
           </Popconfirm>
         </Space>
@@ -262,7 +225,10 @@ const Comment = () => {
             <Select
               allowClear
               placeholder="全部状态"
-              options={STATUS_OPTIONS}
+              options={[
+                { label: '启用', value: 'enable' },
+                { label: '禁用', value: 'disable' },
+              ]}
               onChange={setStatusFilter}
             />
           </Form.Item>
