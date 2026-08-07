@@ -13,7 +13,7 @@ import {
   message,
 } from 'antd';
 import dayjs from 'dayjs';
-import { getAllCommentList } from '@/api/comment';
+import { deleteCommentById, getAllCommentList } from '@/api/comment';
 import './index.less';
 
 const { Text, Paragraph } = Typography;
@@ -91,27 +91,35 @@ const Comment = () => {
     setStatusFilter(undefined);
     setArticleFilter('');
   };
-  // 修改评论状态
-  const updateStatus = (ids, status) => {
-    setDataSource((prev) =>
-      prev.map((item) => (ids.includes(item.id) ? { ...item, status } : item))
-    );
-  };
   // 单个删除
-  const handleDelete = (id) => {
-    updateStatus([id], 'disable');
-    setSelectedRowKeys((prev) => prev.filter((key) => key !== id));
-    message.success('评论已禁用');
+  const handleDelete = async (id) => {
+    try {
+      await deleteCommentById(id);
+      // 更新 dataSource，移除已删除的评论（只是软删除）
+      setDataSource((prev) => prev.filter((item) => item.id !== id));
+      setSelectedRowKeys((prev) => prev.filter((key) => key !== id));
+      message.success('评论已删除');
+    } catch (error) {
+      message.error(error?.message || error?.msg || '删除评论失败');
+    }
   };
+
   // 批量删除
-  const handleBatchDelete = () => {
+  const handleBatchDelete = async () => {
     if (!selectedRowKeys.length) {
       message.warning('请先选择评论');
       return;
     }
-    updateStatus(selectedRowKeys, 'disable');
-    setSelectedRowKeys([]);
-    message.success('已禁用选中评论');
+
+    try {
+      await Promise.all(selectedRowKeys.map((id) => deleteCommentById(id)));
+      // 更新 dataSource，移除已删除的评论（只是软删除）
+      setDataSource((prev) => prev.filter((item) => !selectedRowKeys.includes(item.id)));
+      setSelectedRowKeys([]);
+      message.success('已删除选中评论');
+    } catch (error) {
+      message.error(error?.message || error?.msg || '批量删除评论失败');
+    }
   };
 
   const columns = [
@@ -186,14 +194,14 @@ const Comment = () => {
       render: (_, record) => (
         <Space size={0} direction="vertical">
           <Popconfirm
-            title="确定软删除该评论吗？"
+            title="确定删除该评论吗？"
             okText="确定"
             cancelText="取消"
             onConfirm={() => handleDelete(record.id)}
             disabled={record.status === 'disable'}
           >
-            <Button type="link" danger disabled={record.status === 'disable'}>
-              {record.status === 'disable' ? '已禁用' : '禁用'}
+            <Button type="link" danger>
+              删除
             </Button>
           </Popconfirm>
         </Space>
@@ -239,7 +247,7 @@ const Comment = () => {
 
           <Form.Item style={{ minWidth: 108 }}>
             <Button danger onClick={handleBatchDelete}>
-              批量软删除
+              批量删除
             </Button>
           </Form.Item>
         </Space>

@@ -4,3 +4,8 @@ import request from './request';
 export const getAllCommentList = () => {
   return request.get('/comment/getall');
 };
+
+// 删除评论
+export const deleteCommentById = (id) => {
+  return request.delete(`/comment/${id}`);
+};
