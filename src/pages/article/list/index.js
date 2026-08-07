@@ -13,7 +13,7 @@ import './index.less';
 const { Column } = Table;
 
 const ArticleList = () => {
-  const [form] = Form.useForm();
+  const [form] = Form.useForm(); //这个form实例传给Drawer里的Form，方便在Drawer里操作表单数据
   const navigate = useNavigate();
   const location = useLocation();
   const [dataSource, setDataSource] = useState([]); // 文章列表
@@ -26,7 +26,6 @@ const ArticleList = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [formDrawerOpen, setFormDrawerOpen] = useState(false);
 
-  
   const fetchList = useCallback(async () => {
     try {
       setRefreshing(true);
@@ -55,6 +54,7 @@ const ArticleList = () => {
           key: item.id, // 把文章id设置为表格行的 key
         }))
         .sort((a, b) => Number(b.id || b.key || 0) - Number(a.id || a.key || 0));
+      // 文章列表
       setDataSource(list);
     } catch (error) {
       // 新返回格式失败信息统一在 message 字段
@@ -101,19 +101,13 @@ const ArticleList = () => {
         id: editingKey,
       });
       message.success('文章信息已更新');
-      // 更新 table （不发新请求）
-      /*
-      setDataSource(prev =>
-        prev.map(item =>
-          item.key === editingKey ? { ...item, ...newValues } : item
-        )
-      );
-      */
       // 更新后重新请求列表
       await fetchList();
       // 清空 表单
       form.resetFields();
+      // 关闭编辑状态
       setEditingKey(null);
+      // 关闭抽屉
       setFormDrawerOpen(false);
     });
   };
