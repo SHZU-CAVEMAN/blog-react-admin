@@ -5,7 +5,7 @@ export const getAllCommentList = () => {
   return request.get('/comment/getall');
 };
 
-// 删除评论
-export const deleteCommentById = (id) => {
-  return request.delete(`/comment/${id}`);
+// 更新评论状态
+export const updateCommentStatusById = (id, status) => {
+  return request.patch(`/comment/${id}`, { status });
 };
