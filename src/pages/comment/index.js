@@ -13,7 +13,7 @@ import {
   message,
 } from 'antd';
 import dayjs from 'dayjs';
-import { deleteCommentById, getAllCommentList } from '@/api/comment';
+import { getAllCommentList, updateCommentStatusById } from '@/api/comment';
 import './index.less';
 
 const { Text, Paragraph } = Typography;
@@ -26,7 +26,6 @@ const Comment = () => {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState(undefined);
   const [articleFilter, setArticleFilter] = useState('');
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   // 获取评论列表
   const fetchComments = useCallback(async () => {
@@ -80,7 +79,7 @@ const Comment = () => {
         !normalizedArticle ||
         String(item.articleTitle || '').toLowerCase().includes(normalizedArticle);
 
-      return keywordMatched && statusMatched && articleMatched;
+      return keywordMatched && statusMatched && articleMatched; 
     });
   }, [articleFilter, dataSource, keyword, statusFilter]);
 
@@ -91,34 +90,16 @@ const Comment = () => {
     setStatusFilter(undefined);
     setArticleFilter('');
   };
-  // 单个删除
-  const handleDelete = async (id) => {
+  // 单个更新状态
+  const updateCommentStatus = async (id, status) => {
     try {
-      await deleteCommentById(id);
-      // 更新 dataSource，移除已删除的评论（只是软删除）
-      setDataSource((prev) => prev.filter((item) => item.id !== id));
-      setSelectedRowKeys((prev) => prev.filter((key) => key !== id));
-      message.success('评论已删除');
+      await updateCommentStatusById(id, status);
+      setDataSource((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, status } : item))
+      );
+      message.success(status === 'enable' ? '评论已启用' : '评论已禁用');
     } catch (error) {
-      message.error(error?.message || error?.msg || '删除评论失败');
-    }
-  };
-
-  // 批量删除
-  const handleBatchDelete = async () => {
-    if (!selectedRowKeys.length) {
-      message.warning('请先选择评论');
-      return;
-    }
-
-    try {
-      await Promise.all(selectedRowKeys.map((id) => deleteCommentById(id)));
-      // 更新 dataSource，移除已删除的评论（只是软删除）
-      setDataSource((prev) => prev.filter((item) => !selectedRowKeys.includes(item.id)));
-      setSelectedRowKeys([]);
-      message.success('已删除选中评论');
-    } catch (error) {
-      message.error(error?.message || error?.msg || '批量删除评论失败');
+      message.error(error?.message || error?.msg || '更新评论状态失败');
     }
   };
 
@@ -191,21 +172,23 @@ const Comment = () => {
       title: '操作',
       key: 'action',
       width: 100,
-      render: (_, record) => (
-        <Space size={0} direction="vertical">
-          <Popconfirm
-            title="确定删除该评论吗？"
-            okText="确定"
-            cancelText="取消"
-            onConfirm={() => handleDelete(record.id)}
-            disabled={record.status === 'disable'}
-          >
-            <Button type="link" danger>
-              删除
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => {
+        const isEnabled = record.status === 'enable';
+        return (
+          <Space size={0} direction="vertical">
+            <Popconfirm
+              title={isEnabled ? '确定禁用该评论吗？' : '确定启用该评论吗？'}
+              okText="确定"
+              cancelText="取消"
+              onConfirm={() => updateCommentStatus(record.id, isEnabled ? 'disable' : 'enable')}
+            >
+              <Button type="link" danger={isEnabled}>
+                {isEnabled ? '禁用' : '启用'}
+              </Button>
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -242,42 +225,27 @@ const Comment = () => {
           </Form.Item>
 
           <Form.Item style={{ minWidth: 88 }}>
-            <Button onClick={resetFilters}>重置</Button>
+            <Button onClick={resetFilters}>清空查询条件</Button>
           </Form.Item>
 
-          <Form.Item style={{ minWidth: 108 }}>
-            <Button danger onClick={handleBatchDelete}>
-              批量删除
-            </Button>
+          <Form.Item>
+            <Text type="secondary">共 {filteredData.length} 条评论</Text>
           </Form.Item>
         </Space>
       </Form>
 
-      <Space wrap className="batch-row">
-        <Text type="secondary">当前选中 {selectedRowKeys.length} 条</Text>
-      </Space>
-
       <Table
         rowKey="id"
         bordered
+        size="small"
         loading={loading}
         className="comment-table"
         dataSource={filteredData}
         columns={columns}
         tableLayout="fixed"
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-          columnWidth: 36,
-        }}
-        pagination={{
-          pageSize: 8,
-          showQuickJumper: true,
-          showSizeChanger: false,
-          showTotal: (total) => `共 ${total} 条评论`,
-        }}
+        pagination={false}    
+        scroll={{ y: 'calc(100vh - 200px)' }}
       />
-
     </div>
   );
 };
