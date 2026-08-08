@@ -18,7 +18,8 @@ export const uploadSingleFile = (file, articleId) => {
 
 // 查询所有上传的文件列表
 export const getPictureList = async () => {
-  return service.get('/upload-files');
+  const res = await service.get('/upload-files');
+  return Array.isArray(res?.data) ? res.data : [];
 };
 // 删除指定的文件
 export const deletePictureFile = async (name) => {
