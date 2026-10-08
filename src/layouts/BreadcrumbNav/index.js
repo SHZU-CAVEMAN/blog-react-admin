@@ -32,6 +32,11 @@ function BreadcrumbNav() {
     // 维护已访问过的路由列表（包含 pathname + search），用于显示面包屑导航历史
     const [crumbPaths, setCrumbPaths] = useState([]);
 
+    // 点击面包屑切换页面。
+    const handleNavigate = useCallback((item) => {
+        navigate({ pathname: item.pathname, search: item.search || '' });
+    }, [navigate]);
+
     // 监听路由变化，自动将新访问的路由加入面包屑列表
     useEffect(() => {
         setCrumbPaths((prev) => {
@@ -75,7 +80,7 @@ function BreadcrumbNav() {
                 // 为当前路由的面包屑项添加 active 类，用于高亮显示（黑色+加粗）
                 <span
                     className={`crumb-item ${item.pathname === pathname ? 'active' : ''}`}
-                    onClick={() => navigate({ pathname: item.pathname, search: item.search || '' })}
+                    onClick={() => handleNavigate(item)}
                 >
                     <span className="crumb-label">{getRouteLabel(item.pathname)}</span>
                     {/* 首页不显示关闭按钮，其他页面显示 */}
@@ -88,7 +93,7 @@ function BreadcrumbNav() {
                 </span>
             ),
         }));
-    }, [crumbPaths, navigate, pathname, handleClose]);
+    }, [crumbPaths, pathname, handleNavigate, handleClose]);
 
     // 渲染 Ant Design Breadcrumb 组件，展示面包屑导航
     return <Breadcrumb className="body-breadcrumb" separator="" items={items} />;

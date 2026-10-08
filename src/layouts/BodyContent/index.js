@@ -26,14 +26,12 @@ function BodyContent(){
         });
     }, [location.pathname, outlet]);
 
-    // 页面切换或缓存更新时，多次触发 resize 事件让 Table 等组件重新计算布局
-    // 原因：display: none→block 切换时，Ant Design Table 需要信号来重新测量宽度
-    // 多次触发确保在各个 rerender 阶段都能被组件捕获
+    // 页面先完成切换，再触发一次 resize 让 Table 重新计算布局。
     useEffect(() => {
-        const timers = [0, 50, 100, 200].map(delay =>
-            setTimeout(() => window.dispatchEvent(new Event('resize')), delay)
-        );
-        return () => timers.forEach(timer => clearTimeout(timer));
+        const timer = setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 50);
+        return () => clearTimeout(timer);
     }, [location.pathname, cachedPages.length]);
 
     return (

@@ -1,83 +1,112 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import dayjs from 'dayjs';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Form, Button ,Drawer, message } from 'antd';
 import { getCategoryList } from '@/api/category';
 import { addArticle, updateArticle, getArticleById, publishArticle } from '@/api/article';
 import ArticleBaseFields from '@/components/ArticleBaseFields';
 import './index.less';
 
-const SNAPSHOT_INTERVAL_MS = 5000; // 快照间隔：5s
-const SNAPSHOT_PREFIX = 'article:create:snapshot:'; // 快照存储的 localStorage key 前缀
-const SNAPSHOT_FORM_KEYS = ['title', 'picture', 'categoryId', 'publishTime', 'summary', 'status']; // 需要保存快照的表单字段名
+const ARTICLE_CACHE_PREFIX = 'article:create:cache:'; // 后端文章缓存 key 前缀
+const ARTICLE_DRAFT_PREFIX = 'article:create:draft:'; // 未保存到后端的草稿 key 前缀
+const ARTICLE_FORM_KEYS = ['title', 'picture', 'categoryId', 'publishTime', 'summary', 'status'];
+const EMPTY_ARTICLE = { title: '', picture: '', categoryId: '', publishTime: '', summary: '', status: '', content: '**Hello Markdown**' };
+
+// 正文不变时跳过 Markdown 编辑器的高成本重渲染。
+const ArticleMarkdownEditor = memo(({ value, onChange }) => (
+  <MDEditor
+    className="article-md-editor"
+    value={value}
+    onChange={onChange}
+    height={400}
+  />
+));
+
+// 路由监听组件（避免路由变化时重渲染整个文章编辑器）。
+const ArticleRouteObserver = memo(({ onChange }) => {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    onChange(pathname, search);
+  }, [pathname, search, onChange]);
+
+  return null;
+});
+
+// 读取路由参数中的文章 ID，不在当前组件中直接使用URLSearchParams
+const getArticleIdFromSearch = (search) => new URLSearchParams(search).get('id');
+
+// 读取本地文章数据，损坏的数据直接删除。
+const readLocalArticle = (key) => {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    localStorage.removeItem(key);
+    return null;
+  }
+};
+
+// 比较固定文章字段，避免在页面切换时序列化整篇正文。
+const isArticleChanged = (current, baseline) => (
+  current.title !== baseline.title
+  || current.picture !== baseline.picture
+  || current.categoryId !== baseline.categoryId
+  || current.publishTime !== baseline.publishTime
+  || current.summary !== baseline.summary
+  || current.status !== baseline.status
+  || current.content !== baseline.content
+);
 
 const ArticleCreate = () => {
   const [content, setContent] = useState('**Hello Markdown**');
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [submittingAction, setSubmittingAction] = useState(''); // 当前提交动作：'add' | 'update' | 'publish'
   const [form] = Form.useForm();
-  // 记录最近一次已成功加载详情的文章 id。
-  // 目的：面包屑切走再切回同一篇文章时，跳过重复详情请求。
-  const lastLoadedArticleIdRef = useRef('');
-
-  const contentRef = useRef(content); // 编辑器内容引用，用于快照恢复
+  const contentRef = useRef(content); // 始终保存最新正文，供离开页面时读取
+  const activeArticleRef = useRef(null); // 记住离开页面前正在编辑的文章及其本地 key
 
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const mode = searchParams.get('mode'); // 路由参数里的模式：'add' | 'edit'
-  const routeArticleId = searchParams.get('id'); // 路由参数里的文章 id（来源：/article/create?mode=edit&id=xxx）
-  const snapshotKey = `${SNAPSHOT_PREFIX}${routeArticleId ? `id:${routeArticleId}` : 'draft'}`; // 当前快照的 localStorage key
-  const isEditMode = mode === 'edit' && !!routeArticleId;
+  const [editorRoute, setEditorRoute] = useState(() => ({
+    key: `${window.location.pathname}${window.location.search}`,
+    id: getArticleIdFromSearch(window.location.search),
+  }));
+  const routeArticleId = editorRoute.id;
+  const cacheKey = routeArticleId ? `${ARTICLE_CACHE_PREFIX}${routeArticleId}` : '';
+  const draftKey = `${ARTICLE_DRAFT_PREFIX}${routeArticleId || 'new'}`;
   const [formDrawerOpen, setFormDrawerOpen] = useState(false); // 抽屉的显示状态
-
-  // 清理指定快照。
-  const clearSnapshot = useCallback((key) => {
-    localStorage.removeItem(key);
-  }, []);
 
   // 同步 contentRef 的值，确保快照恢复时能拿到最新的编辑器内容。
   useEffect(() => {
     contentRef.current = content;
   }, [content]);
 
-  // 读取当前编辑内容并生成可持久化快照。
-  const getSnapshotPayload = useCallback(() => {
-    const values = form.getFieldsValue(SNAPSHOT_FORM_KEYS);
+  // 读取当前表单和正文，缓存与草稿都使用同一固定结构。
+  const getCurrentArticle = useCallback(() => {
+    const values = form.getFieldsValue(ARTICLE_FORM_KEYS);
     return {
-      formValues: {
-        ...values,
-        publishTime: values.publishTime
-          ? (dayjs.isDayjs(values.publishTime) ? values.publishTime.toISOString() : String(values.publishTime))
-          : '',
-      },
+      title: values.title || '',
+      picture: values.picture || '',
+      categoryId: values.categoryId || '',
+      publishTime: values.publishTime ? values.publishTime.toISOString() : '',
+      summary: values.summary || '',
+      status: values.status || '',
       content: contentRef.current,
-      updatedAt: Date.now(),
     };
   }, [form]);
 
-  // 从 localStorage 恢复快照到表单与编辑器。
-  const restoreSnapshot = useCallback((key, silent = false) => {
-    // silent 入参控制要不要弹出提示 “已恢复本地快照”，编辑态不提示，新建时提示。
-    const raw = localStorage.getItem(key);
-    if (!raw) {
-      return;
-    }
-    try {
-      const snapshot = JSON.parse(raw);
-      const formValues = snapshot?.formValues || {};
-      const publishTime = formValues.publishTime ? dayjs(formValues.publishTime) : null;
-      form.setFieldsValue({
-        ...formValues,
-        publishTime: publishTime && publishTime.isValid() ? publishTime : null,
-      });
-      setContent(String(snapshot?.content || ''));
-      if (!silent) {
-        message.info('已恢复本地快照');
-      }
-    } catch (error) {
-      localStorage.removeItem(key);
-    }
+  // 将缓存或草稿回填到表单和正文编辑器。
+  const applyArticle = useCallback((article) => {
+    form.setFieldsValue({
+      title: article.title,
+      picture: article.picture,
+      categoryId: article.categoryId || undefined,
+      publishTime: article.publishTime ? dayjs(article.publishTime) : null,
+      summary: article.summary,
+      status: article.status,
+    });
+    setContent(article.content || '');
   }, [form]);
 
   // 路由参数变化 清理抽屉状态（把抽屉收起来）
@@ -114,93 +143,90 @@ const ArticleCreate = () => {
     };
   }, []);
 
-  // 新建态尝试恢复本地快照
-  useEffect(() => {
-    if (isEditMode) {
+  // 路由变化时，进入编辑页才更新父组件；离开时只在后台保存草稿。
+  const handleRouteChange = useCallback((pathname, search) => {
+    if (pathname === '/article/create') {
+      // 进入编辑页
+      const nextRoute = { key: `${pathname}${search}`, id: getArticleIdFromSearch(search) };
+      setEditorRoute((current) => (
+        current.key === nextRoute.key && activeArticleRef.current ? current : nextRoute
+      ));
       return;
     }
-    restoreSnapshot(snapshotKey);
-  }, [isEditMode, snapshotKey, restoreSnapshot]);
+    // 离开编辑页
+    setFormDrawerOpen(false);
+    const activeArticle = activeArticleRef.current; //最近一次加载或保存成功的文章内容
+    if (!activeArticle) {
+      return;
+    }
+    const currentArticle = getCurrentArticle();
+    activeArticleRef.current = null;
+    // 导航先完成，再执行同步的 localStorage 写入，避免阻塞点击反馈。
+    setTimeout(() => {
+      // 比较当前表单和正文 与 后台文章数据，有变化则保存本地草稿，无变化则移除草稿key。
+      if (isArticleChanged(currentArticle, activeArticle.baseline)) {
+        localStorage.setItem(activeArticle.draftKey, JSON.stringify(currentArticle));
+      } else {
+        localStorage.removeItem(activeArticle.draftKey);
+      }
+    }, 0);
+  }, [getCurrentArticle]);
 
-  // 初始化文章信息
-  // 组件会被缓存，避免重复请求，但路由参数变化需重新加载文章。
+  // 新建文章时恢复本地草稿。
   useEffect(() => {
-    // 仅在编辑态下才请求文章详情
-    if (!isEditMode || !routeArticleId) {
+    if (routeArticleId) {
       return;
     }
-    const articleId = String(routeArticleId);
-    // 同一篇文章已加载过时不重复请求，直接复用当前页面状态。
-    if (lastLoadedArticleIdRef.current === articleId) {
+    activeArticleRef.current = { draftKey, baseline: EMPTY_ARTICLE };
+    const draftArticle = readLocalArticle(draftKey);
+    applyArticle(draftArticle || EMPTY_ARTICLE);
+  }, [editorRoute.key, routeArticleId, draftKey, applyArticle]);
+
+  // 加载文章信息 （先读缓存；没有缓存才请求后端，然后恢复本地草稿）
+  useEffect(() => {
+    if (!routeArticleId) {
+      return;
+    }
+    // 读本地缓存
+    const cachedArticle = readLocalArticle(cacheKey);
+    if (cachedArticle) {
+      activeArticleRef.current = { draftKey, baseline: cachedArticle };
+      applyArticle(readLocalArticle(draftKey) || cachedArticle);
       setFormDrawerOpen(true);
       return;
     }
-
+    // 请求后台文章
     let cancelled = false;
-    const initEditArticle = async () => {
+    const loadArticle = async () => {
       try {
-        const { data: currenArticle } = await getArticleById(articleId);
-        if (cancelled) {
+        const { data: article } = await getArticleById(routeArticleId);
+        if (cancelled || !article) {
           return;
         }
-        if (!currenArticle) {
-          message.error('未找到要编辑的文章');
-          return;
-        }
-        // 初始化表单字段值
-        form.setFieldsValue({
-          title: currenArticle.title || currenArticle.name || '',
-          picture: currenArticle.picture || currenArticle.cover || '',
-          categoryId: currenArticle.categoryId || currenArticle.category_id
-            ? String(currenArticle.categoryId || currenArticle.category_id)
-            : undefined,
-          publishTime: currenArticle.publishTime || currenArticle.publish_time
-            ? dayjs(currenArticle.publishTime || currenArticle.publish_time)
-            : null,
-          summary: currenArticle.summary || currenArticle.intro || '',
-          status: currenArticle.status || '',
-        });
-        // 3 初始化 content 的状态
-        setContent(currenArticle.content || '');
-        // 4 打开抽屉显示文章信息表单
+        const serverArticle = {
+          title: article.title || '',
+          picture: article.picture || '',
+          categoryId: article.categoryId ? String(article.categoryId) : '',
+          publishTime: article.publishTime ? dayjs(article.publishTime).toISOString() : '',
+          summary: article.summary || '',
+          status: article.status || '',
+          content: article.content || '',
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(serverArticle)); //缓存到本地浏览器
+        activeArticleRef.current = { draftKey, baseline: serverArticle }; // 记住当前文章的草稿key和基线数据
+        applyArticle(readLocalArticle(draftKey) || serverArticle); // 恢复草稿或服务器数据
         setFormDrawerOpen(true);
-        // 5 记录已成功加载的文章 id，避免重复请求
-        lastLoadedArticleIdRef.current = articleId;
-        // 编辑态优先恢复该文章对应的本地快照 ，避免本地草稿丢失。
-        // 2026.06.28 
-        restoreSnapshot(snapshotKey, true);
       } catch (error) {
         if (!cancelled) {
           message.error(error?.message || error?.msg || '初始化页面失败');
         }
       }
     };
-
-    initEditArticle();
-
+    loadArticle();
     return () => {
       cancelled = true;
     };
-  }, [routeArticleId, form, isEditMode, snapshotKey, restoreSnapshot]);
-
-  // 定时保存快照：仅本地保存（不云端保存，避免在用户不知情时覆盖数据库）。
-  useEffect(() => {
-    const timer = setInterval(async () => {
-      // 避免重复提交快照
-      if (submittingAction) {
-        return;
-      }
-      // 保存本地快照
-      const snapshot = getSnapshotPayload();
-      const snapshotStr = JSON.stringify(snapshot);
-      localStorage.setItem(snapshotKey, snapshotStr);
-
-    }, SNAPSHOT_INTERVAL_MS);
-    // 组件卸载时清理定时器
-    return () => {
-      clearInterval(timer);
-    };
-  }, [snapshotKey, submittingAction, getSnapshotPayload]); 
+  }, [editorRoute.key, routeArticleId, cacheKey, draftKey, applyArticle]);
 
   // 构建提交接口的 payload
   const buildPayload = (values, action) => {
@@ -217,6 +243,7 @@ const ArticleCreate = () => {
       content,
     };
   };
+
   // 新建文章
   const handleCreateNew = async () => {
     try {
@@ -225,11 +252,12 @@ const ArticleCreate = () => {
       const payload = buildPayload(values, 'create');
 
       const response = await addArticle(payload);
-      const createdId = response?.id;
+      const createdId = response?.data?.id;
       if (createdId) {
         const nextId = String(createdId);
-        // 新建成功后清理新建草稿快照。
-        clearSnapshot(`${SNAPSHOT_PREFIX}draft`);
+        // 新建成功后，当前内容成为该文章的本地缓存，并删除新建草稿。
+        localStorage.setItem(`${ARTICLE_CACHE_PREFIX}${nextId}`, JSON.stringify(getCurrentArticle()));
+        localStorage.removeItem(`${ARTICLE_DRAFT_PREFIX}new`);
 
         navigate(`/article/create?mode=edit&id=${nextId}`, { replace: true });
       } else {
@@ -257,23 +285,25 @@ const ArticleCreate = () => {
         message.warning('请先点击新建生成文章，再进行保存或发布');
         return;
       }
-
+      // 更新
       if (action === 'save') {
         await updateArticle({
           ...payload,
           id: Number(routeArticleId),
         });
       }
+      // 发布 （更新文章状态）
       if (action === 'publish') {
         await publishArticle({
           ...payload,
           id: Number(routeArticleId),
         });
       }
-
-      // 手动保存后，清理当前快照。
-      clearSnapshot(snapshotKey);
-
+      // 保存成功后更新本地缓存，当前内容已不再属于草稿。
+      const savedArticle = getCurrentArticle();
+      localStorage.setItem(cacheKey, JSON.stringify(savedArticle));
+      localStorage.removeItem(draftKey);
+      activeArticleRef.current = { draftKey, baseline: savedArticle };
       message.success(action === 'publish' ? '文章已发布' : '文章已保存');
     } catch (error) {
       if (error?.errorFields) {
@@ -290,9 +320,9 @@ const ArticleCreate = () => {
   const handleClearAll = () => {
     form.resetFields();
     setContent('');
-    lastLoadedArticleIdRef.current = '';
-    // 主动清空时同步删除快照。
-    clearSnapshot(snapshotKey);
+    // 主动清空只删除当前草稿，已保存文章缓存仍然保留。
+    localStorage.removeItem(draftKey);
+    activeArticleRef.current = null;
     setSubmittingAction('');
     navigate('/article/create', { replace: true });
     message.success('已清空当前内容，可新建文章');
@@ -300,16 +330,8 @@ const ArticleCreate = () => {
 
   return (
     <div data-color-mode="light">
+      <ArticleRouteObserver onChange={handleRouteChange} />
       <Form form={form} layout="vertical">
-        {/* <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
-          <ArticleBaseFields
-            categoryOptions={categoryOptions}
-            selectedPictureFile={selectedPictureFile}
-            onSelectedPictureFileChange={setSelectedPictureFile}
-          />
-        </div> */}
-
-        {/*  */}
               <Drawer
                 title={routeArticleId ? `编辑文章 #${routeArticleId}` : '文章信息表'}
                 placement="right"
@@ -365,19 +387,11 @@ const ArticleCreate = () => {
           >
             文章信息
           </Button>
-          {/* <Button
-            onClick={() => handleSubmitByAction('publish')}
-            loading={submittingAction === 'publish'}
-          >
-            发布
-          </Button> */}
         </Form.Item>
         <Form.Item>
-          <MDEditor
-            className="article-md-editor"
+          <ArticleMarkdownEditor
             value={content}
             onChange={setContent}
-            height={400}
           />
         </Form.Item>
       </Form>

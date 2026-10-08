@@ -1,6 +1,6 @@
 import { Space, Table, Button, Form, message, Input, Select, Drawer,Tooltip } from 'antd';
 import { useState,useEffect, useMemo, useCallback } from 'react';
-import { useNavigate,useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import { getArticleList,updateArticle} from '@/api/article'
@@ -15,7 +15,6 @@ const { Column } = Table;
 const ArticleList = () => {
   const [form] = Form.useForm(); //这个form实例传给Drawer里的Form，方便在Drawer里操作表单数据
   const navigate = useNavigate();
-  const location = useLocation();
   const [dataSource, setDataSource] = useState([]); // 文章列表
   const [editingKey, setEditingKey] = useState(null);  //  当前是否在编辑
   const [categoryData, setCategoryData] = useState([]); // 分类 options
@@ -72,13 +71,6 @@ const ArticleList = () => {
       setFormDrawerOpen(false);
     }
   }, [fetchList]); // 初始化时拉取列表；依赖稳定的 fetchList，避免 Hook 依赖告警
-
-  useEffect(() => {
-    // 组件卸载时清理状态
-    return () => {
-      setFormDrawerOpen(false);
-    };
-  }, [location.pathname]); // 确保在路由切换时清理状态
 
   // 更新 （按钮）
   const handleSubmit = () => {
